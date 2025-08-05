@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Monitor</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--vscode-editor-background, #1e1e1e);
+            color: var(--vscode-foreground, #cccccc);
+            padding: 8px;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .header {
+            background-color: var(--vscode-input-background, #3c3c3c);
+            border: 1px solid var(--vscode-input-border, #3c3c3c);
+            border-radius: 4px;
+            padding: 6px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .url-input {
+            flex: 1;
+            padding: 4px 8px;
+            background-color: var(--vscode-input-background, #3c3c3c);
+            color: var(--vscode-input-foreground, #cccccc);
+            border: 1px solid var(--vscode-input-border, #3c3c3c);
+            border-radius: 3px;
+            font-size: 12px;
+            outline: none;
+        }
+        
+        .url-input:focus {
+            border-color: var(--vscode-focusBorder, #0078d4);
+        }
+        
+        .refresh-button {
+            background-color: var(--vscode-button-background, #0e639c);
+            color: var(--vscode-button-foreground, #ffffff);
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            min-width: 28px;
+        }
+        
+        .refresh-button:hover {
+            background-color: var(--vscode-button-hoverBackground, #1177bb);
+        }
+        
+        .content-container {
+            width: 100%;
+            height: calc(100vh - 60px);
+            border: 1px solid var(--vscode-panel-border, #3c3c3c);
+            border-radius: 4px;
+            overflow: hidden;
+            background-color: var(--vscode-editor-background, #1e1e1e);
+            position: relative;
+        }
+        
+        .iframe-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: none;
+        }
+        
+        .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: #ffffff;
+        }
+        
+        .default-dashboard {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: block;
+            overflow-y: auto;
+            padding: 12px;
+        }
+        
+        .loading, .error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading {
+            color: var(--vscode-foreground, #cccccc);
+        }
+        
+        .error-message {
+            color: var(--vscode-errorForeground, #f44747);
+        }
+        
+        /* Simple style for default dashboard */
+        .service-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .service-item {
+            background-color: var(--vscode-editor-background, #252526);
+            border: 1px solid var(--vscode-panel-border, #3c3c3c);
+            border-radius: 4px;
+            padding: 12px;
+        }
+        
+        .service-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .service-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .service-name {
+            color: var(--vscode-foreground, #cccccc);
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .service-description {
+            color: var(--vscode-descriptionForeground, #a6a6a6);
+            font-size: 12px;
+            margin-top: 2px;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+        }
+        
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+        
+        .status-active { background-color: #4CAF50; }
+        .status-warning { background-color: #FF9800; }
+        .status-error { background-color: #f44747; }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--vscode-panel-border, #3c3c3c);
+        }
+        
+        .metric {
+            background-color: var(--vscode-input-background, #3c3c3c);
+            border: 1px solid var(--vscode-input-border, #3c3c3c);
+            border-radius: 3px;
+            padding: 6px;
+            text-align: center;
+        }
+        
+        .metric-label {
+            color: var(--vscode-descriptionForeground, #a6a6a6);
+            font-size: 10px;
+            display: block;
+            margin-bottom: 2px;
+        }
+        
+        .metric-value {
+            color: var(--vscode-foreground, #cccccc);
+            font-weight: 600;
+            font-size: 12px;
+        }
+    </style>
+</head>
+        
+        .service-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .service-item {
+            background-color: #242424;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 8px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .service-item:hover {
+            border-color: #00ff88;
+            box-shadow: 0 2px 6px rgba(0, 255, 136, 0.1);
+        }
+        
+        .service-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        
+        .service-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .service-icon {
+            font-size: 16px;
+            filter: drop-shadow(0 0 2px rgba(0, 255, 136, 0.5));
+        }
+        
+        .service-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .service-name {
+            color: #00ff88;
+            font-weight: 600;
+            font-size: 11px;
+            margin-bottom: 1px;
+        }
+        
+        .service-description {
+            color: #aaa;
+            font-size: 8px;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 8px;
+            font-weight: 500;
+        }
+        
+        .status-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-active { background-color: #00ff88; }
+        .status-warning { background-color: #ffaa00; }
+        .status-error { background-color: #ff4444; }
+        
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid #444;
+        }
+        
+        .metric {
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 3px;
+            padding: 3px 4px;
+            text-align: left;
+            transition: background-color 0.3s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .metric:hover {
+            background-color: #2a2a2a;
+            border-color: #555;
+        }
+        
+        .metric-label {
+            color: #999;
+            font-size: 7px;
+            flex: 1;
+        }
+        
+        .metric-value {
+            color: #00ff88;
+            font-weight: 700;
+            font-size: 9px;
+            text-shadow: 0 0 2px rgba(0, 255, 136, 0.5);
+            margin-left: 3px;
+        }
+        
+        .bot-gradient { background: linear-gradient(135deg, #1a1a1a 0%, #0a2a3a 100%); }
+        .rds-gradient { background: linear-gradient(135deg, #1a1a1a 0%, #2a1a3a 100%); }
+        .api-gradient { background: linear-gradient(135deg, #1a1a1a 0%, #3a2a1a 100%); }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-style: italic;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .error-message {
+            text-align: center;
+            padding: 20px;
+            color: #ff4444;
+            font-style: italic;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <input type="text" 
+               class="url-input" 
+               id="dashboard-url" 
+               placeholder="Enter dashboard URL (e.g., http://localhost:3019/dashboard)"
+               value="http://localhost:3019/dashboard">
+        <button class="refresh-button" onclick="loadDashboard()">🔄</button>
+    </div>
+    
+    <div class="content-container">
+        <div class="loading" id="loading" style="display: none;">
+            Loading dashboard...
+        </div>
+        <div class="error-message" id="error-message" style="display: none;">
+            Failed to load dashboard
+        </div>
+        <!-- HTML embed container -->
+        <div id="embed-container" style="width:100%;height:100%;overflow:auto;"></div>
+        <!-- Default dashboard -->
+        <div class="default-dashboard" id="default-dashboard">
+            <div class="service-list">
+                <div class="service-item">
+                    <div class="service-header">
+                        <div class="service-info">
+                            <div>🤖</div>
+                            <div>
+                                <div class="service-name">Collection Bot</div>
+                                <div class="service-description">Data collection, analysis and learning pipeline</div>
+                            </div>
+                        </div>
+                        <div class="status-indicator">
+                            <div class="status-dot status-active"></div>
+                            <span>Active</span>
+                        </div>
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric">
+                            <span class="metric-label">Collected</span>
+                            <span class="metric-value" id="bot-collected">1,247</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Processing</span>
+                            <span class="metric-value" id="bot-processing">3</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Accuracy</span>
+                            <span class="metric-value" id="bot-accuracy">94.2%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="service-item">
+                    <div class="service-header">
+                        <div class="service-info">
+                            <div>🗄️</div>
+                            <div>
+                                <div class="service-name">RDS Database</div>
+                                <div class="service-description">PostgreSQL Database Server</div>
+                            </div>
+                        </div>
+                        <div class="status-indicator">
+                            <div class="status-dot status-active"></div>
+                            <span>Normal</span>
+                        </div>
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric">
+                            <span class="metric-label">Connections</span>
+                            <span class="metric-value" id="rds-connections">12</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">CPU Usage</span>
+                            <span class="metric-value" id="rds-cpu">23%</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Storage</span>
+                            <span class="metric-value" id="rds-storage">67%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="service-item">
+                    <div class="service-header">
+                        <div class="service-info">
+                            <div>🔗</div>
+                            <div>
+                                <div class="service-name">API Server</div>
+                                <div class="service-description">REST API Endpoint</div>
+                            </div>
+                        </div>
+                        <div class="status-indicator">
+                            <div class="status-dot status-warning"></div>
+                            <span>High Load</span>
+                        </div>
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric">
+                            <span class="metric-label">Requests/h</span>
+                            <span class="metric-value" id="api-requests">2,456</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Response Time</span>
+                            <span class="metric-value" id="api-response">145ms</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Errors</span>
+                            <span class="metric-value" id="api-errors">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Send message via VSCode API
+        const vscode = acquireVsCodeApi();
+        
+        // Restore previous URL
+        const state = vscode.getState();
+        if (state && state.dashboardUrl) {
+            document.getElementById('dashboard-url').value = state.dashboardUrl;
+            if (state.dashboardUrl.trim()) {
+                loadDashboard();
+            } else {
+                showDefaultDashboard();
+            }
+        } else {
+            showDefaultDashboard();
+        }
+        
+        function loadDashboard() {
+            let url = document.getElementById('dashboard-url').value.trim();
+            const loading = document.getElementById('loading');
+            const errorMessage = document.getElementById('error-message');
+            const defaultDashboard = document.getElementById('default-dashboard');
+            const embedContainer = document.getElementById('embed-container');
+
+            console.log('Loading dashboard URL:', url);
+
+            // Save URL
+            vscode.setState({ dashboardUrl: url });
+
+            if (!url) {
+                showDefaultDashboard();
+                return;
+            }
+
+            // Add https if URL doesn't have protocol
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+                document.getElementById('dashboard-url').value = url;
+                vscode.setState({ dashboardUrl: url });
+            }
+
+            // Hide all
+            errorMessage.style.display = 'none';
+            defaultDashboard.style.display = 'none';
+            loading.style.display = 'block';
+            embedContainer.style.display = 'none';
+            loading.textContent = `Loading: ${url}`;
+
+            // Fetch HTML
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error('HTTP error ' + response.status);
+                    return response.text();
+                })
+                .then(html => {
+                    loading.style.display = 'none';
+                    embedContainer.style.display = 'block';
+                    // Embed HTML (extract body part only)
+                    let bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+                    embedContainer.innerHTML = bodyMatch ? bodyMatch[1] : html;
+                })
+                .catch(err => {
+                    loading.style.display = 'none';
+                    errorMessage.style.display = 'block';
+                    errorMessage.innerHTML = `Failed to fetch dashboard HTML:<br><b>${url}</b><br><small>${err.message}</small>`;
+                });
+        }
+        
+        function showDefaultDashboard() {
+            const loading = document.getElementById('loading');
+            const errorMessage = document.getElementById('error-message');
+            const defaultDashboard = document.getElementById('default-dashboard');
+            const embedContainer = document.getElementById('embed-container');
+            console.log('Showing default dashboard');
+            loading.style.display = 'none';
+            errorMessage.style.display = 'none';
+            defaultDashboard.style.display = 'block';
+            embedContainer.style.display = 'none';
+            // Start updating default dashboard metrics
+            updateMetrics();
+            if (!window.metricsInterval) {
+                window.metricsInterval = setInterval(updateMetrics, 3000);
+            }
+        }
+        
+        // Load on Enter key
+        document.getElementById('dashboard-url').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loadDashboard();
+            }
+        });
+        
+        // Real-time metrics update
+        function updateMetrics() {
+            // Bot metrics
+            const botCollected = document.getElementById('bot-collected');
+            const botProcessing = document.getElementById('bot-processing');
+            const botAccuracy = document.getElementById('bot-accuracy');
+            
+            if (botCollected) botCollected.textContent = (Math.floor(Math.random() * 100) + 1200).toLocaleString();
+            if (botProcessing) botProcessing.textContent = Math.floor(Math.random() * 8);
+            if (botAccuracy) botAccuracy.textContent = (Math.random() * 5 + 92).toFixed(1) + '%';
+            
+            // RDS metrics
+            const rdsConnections = document.getElementById('rds-connections');
+            const rdsCpu = document.getElementById('rds-cpu');
+            const rdsStorage = document.getElementById('rds-storage');
+            
+            if (rdsConnections) rdsConnections.textContent = Math.floor(Math.random() * 20 + 5);
+            if (rdsCpu) rdsCpu.textContent = Math.floor(Math.random() * 40 + 15) + '%';
+            if (rdsStorage) rdsStorage.textContent = Math.floor(Math.random() * 25 + 60) + '%';
+            
+            // API metrics
+            const apiRequests = document.getElementById('api-requests');
+            const apiResponse = document.getElementById('api-response');
+            const apiErrors = document.getElementById('api-errors');
+            
+            if (apiRequests) apiRequests.textContent = (Math.floor(Math.random() * 1000) + 2000).toLocaleString();
+            if (apiResponse) apiResponse.textContent = Math.floor(Math.random() * 150 + 80) + 'ms';
+            if (apiErrors) apiErrors.textContent = Math.floor(Math.random() * 4);
+        }
+        
+        console.log('Dashboard Monitor initialized - simplified template version');
+    </script>
+</body>
+</html>

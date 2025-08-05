@@ -1,6 +1,6 @@
 # Change Log
 
-All notable changes to the "dash-panel" extension will be documented in this file.
+All notable changes to the "vscode-web-panel" extension will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [0.0.1] - 2025-01-05
 
 ### Added
-- Initial release of Dash Panel
+- Initial release of Web Panel
 - Display web dashboards in VS Code panels
 - Sidebar integration for quick access
 - URL navigation with protocol auto-detection

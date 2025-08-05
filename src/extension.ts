@@ -3,16 +3,16 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 export function activate(context: vscode.ExtensionContext) {
-	console.log('Dash Panel extension is now active!');
+	console.log('Web Panel extension is now active!');
 
 	// Register webview view provider for sidebar
 	const provider = new DashboardViewProvider(context.extensionUri);
 	context.subscriptions.push(
-		vscode.window.registerWebviewViewProvider('dash-panel.dashboardView', provider)
+		vscode.window.registerWebviewViewProvider('web-panel.dashboardView', provider)
 	);
 
 	// Register command to open dashboard panel
-	const disposable = vscode.commands.registerCommand('dash-panel.openDashboard', () => {
+	const disposable = vscode.commands.registerCommand('web-panel.openDashboard', () => {
 		DashboardPanel.createOrShow(context.extensionUri);
 	});
 
@@ -25,7 +25,7 @@ export function deactivate() {}
  * Provider for dashboard webview view in sidebar
  */
 class DashboardViewProvider implements vscode.WebviewViewProvider {
-	public static readonly viewType = 'dash-panel.dashboardView';
+	public static readonly viewType = 'web-panel.dashboardView';
 
 	private _view?: vscode.WebviewView;
 

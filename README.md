@@ -1,4 +1,4 @@
-# Dash Panel for VS Code
+# Web Panel for VS Code
 
 Display web dashboards directly within VS Code using webview panels or side views. Perfect for monitoring services, viewing analytics, or keeping any web-based dashboard accessible while coding.
 
@@ -16,7 +16,7 @@ Display web dashboards directly within VS Code using webview panels or side view
 1. Install from the VS Code Marketplace (coming soon)
 2. Or install the `.vsix` file directly:
    ```bash
-   code --install-extension dash-panel-*.vsix
+   code --install-extension vscode-web-panel-*.vsix
    ```
 
 ## Usage
@@ -31,7 +31,7 @@ Display web dashboards directly within VS Code using webview panels or side view
 ### Using the Sidebar View
 
 1. Open the Explorer sidebar
-2. Find the "Dash Panel" section
+2. Find the "Web Panel" section
 3. Enter a dashboard URL in the input field
 4. The dashboard loads directly in the sidebar
 
@@ -49,9 +49,9 @@ This extension can display any web-based dashboard, including:
 
 This extension will contribute the following settings (coming in future versions):
 
-* `dash-panel.defaultUrl`: Default URL to load when opening a new panel
-* `dash-panel.enableNavigation`: Show/hide navigation controls
-* `dash-panel.refreshInterval`: Auto-refresh interval in seconds
+* `web-panel.defaultUrl`: Default URL to load when opening a new panel
+* `web-panel.enableNavigation`: Show/hide navigation controls
+* `web-panel.refreshInterval`: Auto-refresh interval in seconds
 
 ## Development
 

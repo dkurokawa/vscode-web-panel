@@ -1,16 +1,16 @@
 {
-  "name": "dash-panel",
-  "displayName": "Dash Panel",
+  "name": "vscode-web-panel",
+  "displayName": "Web Panel",
   "description": "Display web dashboards directly in VS Code panels or side views.",
   "version": "0.0.1",
-  "publisher": "your-publisher-name",
+  "publisher": "dkurokawa",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/dash-panel"
+    "url": "https://github.com/dkurokawa/vscode-web-panel"
   },
-  "homepage": "https://github.com/yourusername/dash-panel#readme",
+  "homepage": "https://github.com/dkurokawa/vscode-web-panel#readme",
   "bugs": {
-    "url": "https://github.com/yourusername/dash-panel/issues"
+    "url": "https://github.com/dkurokawa/vscode-web-panel/issues"
   },
   "license": "MIT",
   "icon": "icon.png",
@@ -32,7 +32,7 @@
   "contributes": {
     "commands": [
       {
-        "command": "dash-panel.openDashboard",
+        "command": "web-panel.openDashboard",
         "title": "Open Dashboard Panel"
       }
     ],
@@ -40,8 +40,8 @@
       "explorer": [
         {
           "type": "webview",
-          "id": "dash-panel.dashboardView",
-          "name": "Dash Panel"
+          "id": "web-panel.dashboardView",
+          "name": "Web Panel"
         }
       ]
     }

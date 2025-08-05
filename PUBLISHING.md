@@ -1,4 +1,4 @@
-# Publishing Dash Panel to VS Code Marketplace
+# Publishing Web Panel to VS Code Marketplace
 
 ## Prerequisites
 
@@ -72,7 +72,7 @@ This creates a `.vsix` file that can be:
 
 1. Install the VSIX locally:
    ```bash
-   code --install-extension dash-panel-0.0.1.vsix
+   code --install-extension vscode-web-panel-0.0.1.vsix
    ```
 
 2. Test all features:
@@ -103,4 +103,4 @@ This creates a `.vsix` file that can be:
 ## Marketplace Link
 
 Once published, your extension will be available at:
-https://marketplace.visualstudio.com/items?itemName=your-publisher-name.dash-panel
+https://marketplace.visualstudio.com/items?itemName=your-publisher-name.vscode-web-panel

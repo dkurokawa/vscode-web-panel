@@ -12,7 +12,7 @@ VS Code内で任意のWebページを直接表示できるようにする拡張�
 ## インストール
 
 1. VS Codeマーケットプレイスからインストール（近日公開予定）
-2. または、`code --install-extension webpanel-*.vsix`を使用して`.vsix`ファイルを直接インストール
+2. または、`code --install-extension vscode-web-panel-*.vsix`を使用して`.vsix`ファイルを直接インストール
 
 ## 使用方法
 
@@ -26,7 +26,7 @@ VS Code内で任意のWebページを直接表示できるようにする拡張�
 ### サイドバービューの使用
 
 1. エクスプローラーサイドバーを開く
-2. 「WebPanel」セクションを見つける
+2. 「Web Panel」セクションを見つける
 3. 入力フィールドにURLを入力
 4. 「ダッシュボードを読み込み」をクリックしてウェブサイトを表示
 
@@ -34,12 +34,12 @@ VS Code内で任意のWebページを直接表示できるようにする拡張�
 
 この拡張機能は以下の設定を提供します：
 
-* `webpanel.defaultUrl`: 新しいパネルを開くときにロードするデフォルトURL（デフォルト：空）
-* `webpanel.enableNavigation`: ナビゲーションコントロールの有効/無効（デフォルト：true）
+* `web-panel.defaultUrl`: 新しいパネルを開くときにロードするデフォルトURL（デフォルト：空）
+* `web-panel.enableNavigation`: ナビゲーションコントロールの有効/無効（デフォルト：true）
 
 ## コマンド
 
-* `webpanel.openWebPanel`: URL入力付きの新しいWebパネルを開く
+* `web-panel.openWebPanel`: URL入力付きの新しいWebパネルを開く
 
 ## 必要条件
 

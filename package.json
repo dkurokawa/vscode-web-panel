@@ -2,7 +2,7 @@
   "name": "vscode-web-panel",
   "displayName": "Web Panel",
   "description": "Display web dashboards directly in VS Code panels or side views.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "dkurokawa",
   "repository": {
     "type": "git",

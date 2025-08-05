@@ -5,6 +5,14 @@ All notable changes to the "vscode-web-panel" extension will be documented in th
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.0.2] - 2025-01-05
+
+### Fixed
+- Fixed HTML template styling issue where styles were not properly applied
+- Fixed default URL - now starts empty to show default dashboard
+- Fixed HTML lang attribute to "en"
+- Fixed style tag structure that was causing rendering issues
+
 ## [0.0.1] - 2025-01-05
 
 ### Added

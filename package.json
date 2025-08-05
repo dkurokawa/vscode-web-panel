@@ -30,6 +30,33 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Web Panel",
+      "properties": {
+        "web-panel.renderMode": {
+          "type": "string",
+          "enum": ["iframe", "fetch"],
+          "default": "iframe",
+          "description": "How to render web content. 'iframe' is secure but may be blocked by some sites. 'fetch' can display any content but is less secure."
+        },
+        "web-panel.navigation.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Allow navigation within the panel (following links, form submissions)"
+        },
+        "web-panel.navigation.allowExternal": {
+          "type": "boolean",
+          "default": false,
+          "description": "Allow navigation to external domains (only works in iframe mode)"
+        },
+        "web-panel.security.sandboxLevel": {
+          "type": "string",
+          "enum": ["strict", "medium", "relaxed"],
+          "default": "medium",
+          "description": "Sandbox restrictions for iframe mode. Strict: minimal permissions, Medium: balanced, Relaxed: most features enabled"
+        }
+      }
+    },
     "commands": [
       {
         "command": "web-panel.openDashboard",

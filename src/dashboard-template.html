@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; frame-src https: http:; img-src https: http: data:; script-src 'unsafe-inline'; style-src 'unsafe-inline';">
     <title>Dashboard Monitor</title>
     <style>
         * {
@@ -369,7 +370,13 @@
             Failed to load dashboard
         </div>
         <!-- HTML embed container -->
-        <div id="embed-container" style="width:100%;height:100%;overflow:auto;"></div>
+        <iframe id="dashboard-iframe" 
+                style="width:100%;height:100%;border:none;display:none;"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                frameborder="0">
+        </iframe>
+        <!-- Fetch mode container -->
+        <div id="fetch-container" style="width:100%;height:100%;overflow:auto;display:none;"></div>
         <!-- Default dashboard -->
         <div class="default-dashboard" id="default-dashboard">
             <div class="service-list">
@@ -470,6 +477,50 @@
         // Send message via VSCode API
         const vscode = acquireVsCodeApi();
         
+        // Configuration from VS Code settings (will be injected by extension)
+        let config = {
+            renderMode: 'iframe',  // Will be replaced by extension
+            navigationEnabled: true,
+            allowExternal: false,
+            sandboxLevel: 'medium'
+        };
+        
+        // Function to block navigation in content
+        function blockNavigation(container) {
+            // Block all links
+            const links = container.querySelectorAll('a');
+            links.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('Navigation blocked:', link.href);
+                });
+                link.style.cursor = 'not-allowed';
+                link.style.opacity = '0.6';
+            });
+            
+            // Block all forms
+            const forms = container.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    console.log('Form submission blocked');
+                });
+            });
+        }
+        
+        // Get sandbox attributes based on level
+        function getSandboxAttribute(level) {
+            switch(level) {
+                case 'strict':
+                    return 'allow-scripts allow-same-origin';
+                case 'relaxed':
+                    return 'allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-top-navigation';
+                case 'medium':
+                default:
+                    return 'allow-scripts allow-same-origin allow-forms allow-popups';
+            }
+        }
+        
         // Restore previous URL
         const state = vscode.getState();
         if (state && state.dashboardUrl) {
@@ -488,7 +539,8 @@
             const loading = document.getElementById('loading');
             const errorMessage = document.getElementById('error-message');
             const defaultDashboard = document.getElementById('default-dashboard');
-            const embedContainer = document.getElementById('embed-container');
+            const iframe = document.getElementById('dashboard-iframe');
+            const fetchContainer = document.getElementById('fetch-container');
 
             console.log('Loading dashboard URL:', url);
 
@@ -511,39 +563,88 @@
             errorMessage.style.display = 'none';
             defaultDashboard.style.display = 'none';
             loading.style.display = 'block';
-            embedContainer.style.display = 'none';
+            iframe.style.display = 'none';
+            fetchContainer.style.display = 'none';
             loading.textContent = `Loading: ${url}`;
 
-            // Fetch HTML
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) throw new Error('HTTP error ' + response.status);
-                    return response.text();
-                })
-                .then(html => {
-                    loading.style.display = 'none';
-                    embedContainer.style.display = 'block';
-                    // Embed HTML (extract body part only)
-                    let bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-                    embedContainer.innerHTML = bodyMatch ? bodyMatch[1] : html;
-                })
-                .catch(err => {
+            // Choose render mode based on config
+            if (config.renderMode === 'fetch') {
+                // Fetch mode - less secure but works with all sites
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) throw new Error('HTTP error ' + response.status);
+                        return response.text();
+                    })
+                    .then(html => {
+                        loading.style.display = 'none';
+                        fetchContainer.style.display = 'block';
+                        
+                        // Extract body content
+                        let bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+                        fetchContainer.innerHTML = bodyMatch ? bodyMatch[1] : html;
+                        
+                        // If navigation is disabled, block all links and forms
+                        if (!config.navigationEnabled) {
+                            blockNavigation(fetchContainer);
+                        }
+                    })
+                    .catch(err => {
+                        loading.style.display = 'none';
+                        errorMessage.style.display = 'block';
+                        errorMessage.innerHTML = `Failed to fetch content:<br><b>${url}</b><br><small>${err.message}</small><br><br>Note: Some sites block cross-origin requests.`;
+                    });
+            } else {
+                // Iframe mode - secure default
+                // Update sandbox based on settings
+                iframe.setAttribute('sandbox', getSandboxAttribute(config.sandboxLevel));
+                
+                // Disable navigation if needed
+                if (!config.navigationEnabled && config.sandboxLevel === 'relaxed') {
+                    const currentSandbox = iframe.getAttribute('sandbox');
+                    iframe.setAttribute('sandbox', currentSandbox.replace('allow-top-navigation', ''));
+                }
+                
+                iframe.onerror = () => {
                     loading.style.display = 'none';
                     errorMessage.style.display = 'block';
-                    errorMessage.innerHTML = `Failed to fetch dashboard HTML:<br><b>${url}</b><br><small>${err.message}</small>`;
-                });
+                    errorMessage.innerHTML = `Failed to load in iframe:<br><b>${url}</b><br><small>The site may have blocked iframe embedding. Try switching to 'fetch' mode in settings.</small>`;
+                };
+                
+                iframe.onload = () => {
+                    loading.style.display = 'none';
+                    iframe.style.display = 'block';
+                    
+                    if (!config.navigationEnabled) {
+                        try {
+                            // Try to block navigation in iframe (only works for same-origin)
+                            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                            if (iframeDoc) {
+                                blockNavigation(iframeDoc.body);
+                            }
+                        } catch (e) {
+                            // Cross-origin - can't access content
+                            console.log('Cannot block navigation in cross-origin iframe');
+                        }
+                    }
+                };
+                
+                // Load the URL
+                iframe.src = url;
+            }
         }
         
         function showDefaultDashboard() {
             const loading = document.getElementById('loading');
             const errorMessage = document.getElementById('error-message');
             const defaultDashboard = document.getElementById('default-dashboard');
-            const embedContainer = document.getElementById('embed-container');
+            const iframe = document.getElementById('dashboard-iframe');
+            const fetchContainer = document.getElementById('fetch-container');
             console.log('Showing default dashboard');
             loading.style.display = 'none';
             errorMessage.style.display = 'none';
             defaultDashboard.style.display = 'block';
-            embedContainer.style.display = 'none';
+            iframe.style.display = 'none';
+            fetchContainer.style.display = 'none';
             // Start updating default dashboard metrics
             updateMetrics();
             if (!window.metricsInterval) {

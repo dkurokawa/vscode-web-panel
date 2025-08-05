@@ -47,11 +47,41 @@ This extension can display any web-based dashboard, including:
 
 ## Extension Settings
 
-This extension will contribute the following settings (coming in future versions):
+This extension contributes the following settings:
 
-* `web-panel.defaultUrl`: Default URL to load when opening a new panel
-* `web-panel.enableNavigation`: Show/hide navigation controls
-* `web-panel.refreshInterval`: Auto-refresh interval in seconds
+### Display Settings
+* `web-panel.renderMode`: How to render web content
+  - `iframe` (default): Secure but some sites may block embedding
+  - `fetch`: Works with all sites but less secure
+
+### Navigation Settings
+* `web-panel.navigation.enabled`: Allow navigation within the panel (default: true)
+* `web-panel.navigation.allowExternal`: Allow navigation to external domains in iframe mode (default: false)
+
+### Security Settings
+* `web-panel.security.sandboxLevel`: Sandbox restrictions for iframe mode
+  - `strict`: Minimal permissions (scripts and same-origin only)
+  - `medium` (default): Balanced security (+ forms and popups)
+  - `relaxed`: Most features enabled (+ modals and top navigation)
+
+### Usage Examples
+
+**For maximum compatibility (less secure):**
+```json
+{
+  "web-panel.renderMode": "fetch",
+  "web-panel.navigation.enabled": true
+}
+```
+
+**For maximum security (may not work with all sites):**
+```json
+{
+  "web-panel.renderMode": "iframe",
+  "web-panel.security.sandboxLevel": "strict",
+  "web-panel.navigation.enabled": false
+}
+```
 
 ## Development
 

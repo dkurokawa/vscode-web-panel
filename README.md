@@ -2,6 +2,8 @@
 
 Display web dashboards directly within VS Code using webview panels or side views. Perfect for monitoring services, viewing analytics, or keeping any web-based dashboard accessible while coding.
 
+![Web Panel Screenshot](images/ss01.png)
+
 ## Features
 
 - **Dashboard Panel View**: Open any web dashboard in a dedicated VS Code panel
@@ -18,6 +20,60 @@ Display web dashboards directly within VS Code using webview panels or side view
    ```bash
    code --install-extension vscode-web-panel-*.vsix
    ```
+
+## Default Dashboard (No URL Specified)
+
+When no URL is entered, a built-in sample dashboard (dummy HTML) is displayed. You can freely customize this dashboard by editing `src/dashboard-template.html`.
+
+### Example: Default Dashboard HTML
+
+Below is an excerpt of the default dashboard HTML. You can copy and modify this as you like:
+
+```html
+<div class="default-dashboard" id="default-dashboard">
+    <div class="service-list">
+        <div class="service-item">
+            <div class="service-header">
+                <div class="service-info">
+                    <div>🤖</div>
+                    <div>
+                        <div class="service-name">Collection Bot</div>
+                        <div class="service-description">Data collection, analysis and learning pipeline</div>
+                    </div>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot status-active"></div>
+                    <span>Active</span>
+                </div>
+            </div>
+            <div class="metrics-grid">
+                <div class="metric">
+                    <span class="metric-label">Collected</span>
+                    <span class="metric-value" id="bot-collected">1,247</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Processing</span>
+                    <span class="metric-value" id="bot-processing">3</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Accuracy</span>
+                    <span class="metric-value" id="bot-accuracy">94.2%</span>
+                </div>
+            </div>
+        </div>
+        <!-- ... more service items ... -->
+    </div>
+</div>
+```
+
+**How to customize:**
+- Edit `src/dashboard-template.html` to change the default dashboard.
+- The default dashboard is shown when no URL is entered in the panel.
+- You can add, remove, or style service items as you like.
+
+For advanced customization, you can also edit the CSS and JavaScript in `dashboard-template.html`.
+
+---
 
 ## Usage
 
@@ -127,5 +183,3 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 [MIT](LICENSE)
 
 ---
-
-**Note**: Replace placeholder values in `package.json` (`your-publisher-name`, `yourusername`) and `LICENSE` (`[Your Name]`) with your actual information before publishing.

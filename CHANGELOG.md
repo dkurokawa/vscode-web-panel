@@ -5,6 +5,24 @@ All notable changes to the "vscode-web-panel" extension will be documented in th
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.1.0] - 2025-01-06
+
+### Added
+- Enhanced security features with configurable sandbox levels
+- Navigation controls with external URL protection
+- Multiple render modes (iframe and fetch)
+- Comprehensive configuration system
+- Better error handling and user feedback
+
+### Changed
+- Improved documentation and removed placeholder texts
+- Enhanced webview security with proper CSP configuration
+- Better URL validation and handling
+
+### Fixed
+- Updated all placeholder strings for OSS release
+- Cleaned up documentation for professional presentation
+
 ## [0.0.2] - 2025-01-05
 
 ### Fixed

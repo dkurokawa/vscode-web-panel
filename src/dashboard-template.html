@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; frame-src https: http:; img-src https: http: data:; script-src 'unsafe-inline'; style-src 'unsafe-inline';">
+    <meta http-equiv="Content-Security-Policy" content="default-src *; frame-src * data: blob:; img-src * data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; connect-src *; media-src *; font-src *;">
     <title>Dashboard Monitor</title>
     <style>
         * {
@@ -370,7 +370,7 @@
         <!-- HTML embed container -->
         <iframe id="dashboard-iframe" 
                 style="width:100%;height:100%;border:none;display:none;"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-top-navigation allow-popups-to-escape-sandbox allow-presentation allow-downloads"
                 frameborder="0">
         </iframe>
         <!-- Fetch mode container -->
@@ -479,8 +479,8 @@
         let config = {
             renderMode: 'iframe',  // Will be replaced by extension
             navigationEnabled: true,
-            allowExternal: false,
-            sandboxLevel: 'medium'
+            allowExternal: true,
+            sandboxLevel: 'relaxed'
         };
         
         // Function to block navigation in content
@@ -539,8 +539,6 @@
             const defaultDashboard = document.getElementById('default-dashboard');
             const iframe = document.getElementById('dashboard-iframe');
             const fetchContainer = document.getElementById('fetch-container');
-
-            console.log('Loading dashboard URL:', url);
 
             // Save URL
             vscode.setState({ dashboardUrl: url });
@@ -651,11 +649,15 @@
         }
         
         // Load on Enter key
-        document.getElementById('dashboard-url').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                loadDashboard();
-            }
-        });
+        const urlInput = document.getElementById('dashboard-url');
+        if (urlInput) {
+            urlInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.keyCode === 13) {
+                    e.preventDefault();
+                    loadDashboard();
+                }
+            });
+        }
         
         // Real-time metrics update
         function updateMetrics() {
@@ -687,7 +689,6 @@
             if (apiErrors) apiErrors.textContent = Math.floor(Math.random() * 4);
         }
         
-        console.log('Dashboard Monitor initialized - simplified template version');
     </script>
 </body>
 </html>

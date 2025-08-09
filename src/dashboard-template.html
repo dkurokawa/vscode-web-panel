@@ -1367,8 +1367,8 @@
                 return;
             }
 
-            // Add https if URL doesn't have protocol
-            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            // Add https if URL doesn't have protocol (but allow file://)
+            if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('file://')) {
                 url = 'https://' + url;
                 document.getElementById('dashboard-url').value = url;
                 vscode.setState({ dashboardUrl: url });

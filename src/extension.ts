@@ -42,7 +42,8 @@ class DashboardViewProvider implements vscode.WebviewViewProvider {
 		webviewView.webview.options = {
 			enableScripts: true,
 			localResourceRoots: [
-				this._extensionUri
+				this._extensionUri,
+				vscode.Uri.file('/') // Allow access to all local files
 			]
 		};
 
@@ -100,7 +101,7 @@ class DashboardPanel {
 			{
 				enableScripts: true,
 				retainContextWhenHidden: true,
-				localResourceRoots: [extensionUri]
+				localResourceRoots: [extensionUri, vscode.Uri.file('/')] // Allow access to all local files
 			}
 		);
 

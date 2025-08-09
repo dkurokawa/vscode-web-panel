@@ -13,6 +13,7 @@
     "url": "https://github.com/dkurokawa/vscode-web-panel/issues"
   },
   "license": "MIT",
+  "icon": "icon.png",
   "keywords": [
     "dashboard",
     "webview",

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Icon Generator - Dark Theme</title>
+    <style>
+        body {
+            background: #0d1117;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: #c9d1d9;
+        }
+        canvas {
+            border: 1px solid #30363d;
+            margin: 20px;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+        }
+        .container {
+            text-align: center;
+        }
+        button {
+            background: #238636;
+            color: #ffffff;
+            border: 1px solid rgba(240,246,252,0.1);
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            margin: 10px;
+            font-family: inherit;
+            font-weight: 500;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #2ea043;
+            box-shadow: 0 4px 12px rgba(35,134,54,0.2);
+        }
+        h1 {
+            color: #f0f6fc;
+            font-weight: 600;
+        }
+        p {
+            color: #8b949e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Web Panel Icon - Dark Theme</h1>
+        <canvas id="canvas" width="128" height="128"></canvas>
+        <br>
+        <button onclick="downloadIcon()">Download PNG Icon</button>
+        <p>Right-click on the icon above to save it as icon-dark.png</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Background
+        ctx.fillStyle = '#0d1117';
+        ctx.fillRect(0, 0, 128, 128);
+
+        // Main container with rounded corners
+        function drawRoundedRect(x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        // Outer panel
+        ctx.fillStyle = '#161b22';
+        ctx.strokeStyle = '#30363d';
+        ctx.lineWidth = 1;
+        drawRoundedRect(16, 16, 96, 96, 8);
+        ctx.fill();
+        ctx.stroke();
+
+        // Inner panels (3 dashboard panels)
+        const panels = [
+            { x: 24, y: 24, w: 80, h: 20 },
+            { x: 24, y: 52, w: 80, h: 20 },
+            { x: 24, y: 80, w: 80, h: 20 }
+        ];
+
+        panels.forEach((panel, index) => {
+            // Panel background
+            ctx.fillStyle = '#0d1117';
+            ctx.strokeStyle = '#30363d';
+            ctx.lineWidth = 1;
+            drawRoundedRect(panel.x, panel.y, panel.w, panel.h, 4);
+            ctx.fill();
+            ctx.stroke();
+
+            // Blue accent line on left
+            ctx.fillStyle = '#58a6ff';
+            ctx.fillRect(panel.x, panel.y + 2, 3, panel.h - 4);
+
+            // Content lines (code-like)
+            const colors = [
+                ['#79c0ff', '#ff7b72', '#7ee787'],  // function, variable, string
+                ['#ffa657', '#a5d6ff', '#d2a8ff'],  // keyword, comment, number
+                ['#7ee787', '#79c0ff', '#e3b341']   // string, function, constant
+            ];
+            
+            const lineColors = colors[index];
+            const lineY = panel.y + panel.h / 2;
+            
+            // Draw code lines
+            ctx.lineWidth = 2;
+            
+            // First segment
+            ctx.strokeStyle = lineColors[0];
+            ctx.beginPath();
+            ctx.moveTo(panel.x + 10, lineY);
+            ctx.lineTo(panel.x + 25, lineY);
+            ctx.stroke();
+            
+            // Second segment
+            ctx.strokeStyle = lineColors[1];
+            ctx.beginPath();
+            ctx.moveTo(panel.x + 30, lineY);
+            ctx.lineTo(panel.x + 50, lineY);
+            ctx.stroke();
+            
+            // Third segment
+            ctx.strokeStyle = lineColors[2];
+            ctx.beginPath();
+            ctx.moveTo(panel.x + 55, lineY);
+            ctx.lineTo(panel.x + 70, lineY);
+            ctx.stroke();
+
+            // Status dot
+            const dotColor = index === 0 ? '#3fb950' : (index === 1 ? '#d29922' : '#3fb950');
+            ctx.fillStyle = dotColor;
+            ctx.beginPath();
+            ctx.arc(panel.x + panel.w - 8, lineY, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Dot glow
+            ctx.strokeStyle = dotColor;
+            ctx.globalAlpha = 0.3;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(panel.x + panel.w - 8, lineY, 5, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+        });
+
+        // VS Code brackets at bottom
+        ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillStyle = '#58a6ff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Add subtle shadow
+        ctx.shadowColor = '#58a6ff';
+        ctx.shadowBlur = 4;
+        ctx.fillText('</>', 64, 110);
+        ctx.shadowBlur = 0;
+
+        // Hover effect simulation (static glow on middle panel)
+        ctx.strokeStyle = '#58a6ff';
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.3;
+        drawRoundedRect(24, 52, 80, 20, 4);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        function downloadIcon() {
+            const link = document.createElement('a');
+            link.download = 'icon-dark.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+    </script>
+</body>
+</html>

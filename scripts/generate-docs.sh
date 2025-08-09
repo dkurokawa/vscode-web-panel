@@ -10,10 +10,8 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 VERSION=$(grep '"version":' "$PROJECT_ROOT/package.json" | cut -d'"' -f4 | head -1)
 BUILD_DATE=$(date -u +"%Y-%m-%d")
 
-# Create .html directory if it doesn't exist
-mkdir -p "$PROJECT_ROOT/.html"
-
-cat > "$PROJECT_ROOT/.html/instruction.html" << 'EOF'
+# Generate .instruction.html in project root
+cat > "$PROJECT_ROOT/.instruction.html" << 'EOF'
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -512,12 +510,12 @@ EOF
 # Replace version placeholders
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS
-    sed -i '' "s/VERSION_PLACEHOLDER/${VERSION}/g" "$PROJECT_ROOT/.html/instruction.html"
+    sed -i '' "s/VERSION_PLACEHOLDER/${VERSION}/g" "$PROJECT_ROOT/.instruction.html"
 else
     # Linux
-    sed -i "s/VERSION_PLACEHOLDER/${VERSION}/g" "$PROJECT_ROOT/.html/instruction.html"
+    sed -i "s/VERSION_PLACEHOLDER/${VERSION}/g" "$PROJECT_ROOT/.instruction.html"
 fi
 
-echo "✅ Generated $PROJECT_ROOT/.html/instruction.html (version ${VERSION})"
-echo "📄 File size: $(ls -lh "$PROJECT_ROOT/.html/instruction.html" | awk '{print $5}')"
+echo "✅ Generated $PROJECT_ROOT/.instruction.html (version ${VERSION})"
+echo "📄 File size: $(ls -lh "$PROJECT_ROOT/.instruction.html" | awk '{print $5}')"
 echo "📅 Build date: ${BUILD_DATE}"

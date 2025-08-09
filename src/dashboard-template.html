@@ -1208,6 +1208,32 @@
         document.querySelector('[data-theme="simple"]').classList.add('active');
         // Send message via VSCode API
         const vscode = acquireVsCodeApi();
+        
+        // Track when error was last shown to ensure minimum display time
+        let errorShownAt = 0;
+        const MIN_ERROR_DISPLAY_TIME = 2000; // Minimum time to display error messages (2 seconds)
+        
+        function showError(html) {
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.innerHTML = html;
+            errorMessage.style.display = 'block';
+            errorShownAt = Date.now();
+        }
+        
+        function hideError() {
+            const errorMessage = document.getElementById('error-message');
+            const timeSinceShown = Date.now() - errorShownAt;
+            const remainingTime = Math.max(0, MIN_ERROR_DISPLAY_TIME - timeSinceShown);
+            
+            if (remainingTime > 0) {
+                // Error was shown recently, delay hiding
+                setTimeout(() => {
+                    errorMessage.style.display = 'none';
+                }, remainingTime);
+            } else {
+                errorMessage.style.display = 'none';
+            }
+        }
 
         // 日本語・英語注釈を自動表示
         function setDashboardAnnotation() {
@@ -1299,6 +1325,32 @@
             showDefaultDashboard();
         }
         
+        function getStatusCodeMessage(status) {
+            const messages = {
+                400: 'Bad Request - The server could not understand the request',
+                401: 'Unauthorized - Authentication required to access this resource',
+                403: 'Forbidden - You don\'t have permission to access this resource',
+                404: 'Not Found - The requested page could not be found',
+                405: 'Method Not Allowed - The request method is not supported',
+                408: 'Request Timeout - The server timed out waiting for the request',
+                429: 'Too Many Requests - Rate limit exceeded',
+                500: 'Internal Server Error - The server encountered an error',
+                502: 'Bad Gateway - Invalid response from the upstream server',
+                503: 'Service Unavailable - The server is temporarily unavailable',
+                504: 'Gateway Timeout - The upstream server failed to respond in time'
+            };
+            
+            if (messages[status]) {
+                return `${status} - ${messages[status]}`;
+            } else if (status >= 400 && status < 500) {
+                return `${status} - Client Error`;
+            } else if (status >= 500) {
+                return `${status} - Server Error`;
+            } else {
+                return `${status} - HTTP Error`;
+            }
+        }
+
         function loadDashboard() {
             let url = document.getElementById('dashboard-url').value.trim();
             const loading = document.getElementById('loading');
@@ -1322,20 +1374,35 @@
                 vscode.setState({ dashboardUrl: url });
             }
 
-            // Hide all
-            errorMessage.style.display = 'none';
+            // Only hide error message if we're actually going to try loading something new
+            // This prevents the flash of error disappearing and reappearing
+            const isCurrentlyShowingError = errorMessage.style.display === 'block';
+            
+            // Hide all except error (we'll hide error only on successful start of loading)
             defaultDashboard.style.display = 'none';
             loading.style.display = 'block';
             iframe.style.display = 'none';
             fetchContainer.style.display = 'none';
             loading.textContent = `Loading: ${url}`;
+            
+            // Hide error message only after a delay to prevent flash
+            if (isCurrentlyShowingError) {
+                setTimeout(() => {
+                    errorMessage.style.display = 'none';
+                }, 100);
+            }
 
             // Choose render mode based on config
             if (config.renderMode === 'fetch') {
                 // Fetch mode - less secure but works with all sites
                 fetch(url)
                     .then(response => {
-                        if (!response.ok) throw new Error('HTTP error ' + response.status);
+                        if (!response.ok) {
+                            // Create error with status information
+                            const error = new Error(getStatusCodeMessage(response.status));
+                            error.status = response.status;
+                            throw error;
+                        }
                         return response.text();
                     })
                     .then(html => {
@@ -1353,11 +1420,44 @@
                     })
                     .catch(err => {
                         loading.style.display = 'none';
-                        errorMessage.style.display = 'block';
-                        errorMessage.innerHTML = `Failed to fetch content:<br><b>${url}</b><br><small>${err.message}</small><br><br>Note: Some sites block cross-origin requests.`;
+                        
+                        let errorHtml = `<div style="text-align: center; padding: 20px;">
+                            <h3 style="color: #e74c3c; margin-bottom: 10px;">Failed to Load Dashboard</h3>
+                            <p style="margin-bottom: 15px;"><b>URL:</b> ${url}</p>`;
+                        
+                        if (err.status) {
+                            errorHtml += `<div style="background: #f8f9fa; border-left: 4px solid #e74c3c; padding: 15px; margin: 20px 0; text-align: left;">
+                                <strong>Error Code:</strong> ${err.message}<br>`;
+                            
+                            // Add specific suggestions based on status code
+                            if (err.status === 404) {
+                                errorHtml += '<br><strong>Suggestion:</strong> Check if the URL is correct and the page exists.';
+                            } else if (err.status === 401 || err.status === 403) {
+                                errorHtml += '<br><strong>Suggestion:</strong> You may need to log in or don\'t have permission to access this page.';
+                            } else if (err.status >= 500) {
+                                errorHtml += '<br><strong>Suggestion:</strong> The server is having issues. Try again later.';
+                            }
+                            
+                            errorHtml += '</div>';
+                        } else {
+                            errorHtml += `<div style="background: #f8f9fa; border-left: 4px solid #e74c3c; padding: 15px; margin: 20px 0; text-align: left;">
+                                <strong>Error:</strong> ${err.message}<br>
+                                <br><strong>Note:</strong> Some sites block cross-origin requests. You may need to:
+                                <ul style="margin-top: 10px;">
+                                    <li>Check if the site allows embedding</li>
+                                    <li>Use a proxy or CORS-enabled endpoint</li>
+                                    <li>Access the site directly in your browser</li>
+                                </ul>
+                            </div>`;
+                        }
+                        
+                        errorHtml += '</div>';
+                        showError(errorHtml);
                     });
             } else {
                 // Iframe mode - secure default
+                console.log('Using iframe mode for URL:', url);
+                
                 // Update sandbox based on settings
                 iframe.setAttribute('sandbox', getSandboxAttribute(config.sandboxLevel));
                 
@@ -1367,13 +1467,77 @@
                     iframe.setAttribute('sandbox', currentSandbox.replace('allow-top-navigation', ''));
                 }
                 
+                // For iframe mode, we'll do a pre-flight check with fetch to detect errors
+                // This helps us show proper error messages for 404s and other HTTP errors
+                if (!url.startsWith('file://')) {
+                    fetch(url, { method: 'HEAD', mode: 'no-cors' })
+                        .then(() => {
+                            // URL is reachable, proceed with iframe loading
+                            console.log('URL pre-check passed, loading in iframe');
+                        })
+                        .catch(() => {
+                            // Pre-flight failed, but we'll still try to load in iframe
+                            // as no-cors requests don't give us status information
+                            console.log('URL pre-check failed, but will still attempt iframe load');
+                        });
+                }
+                
                 iframe.onerror = () => {
+                    console.error('iframe.onerror triggered for URL:', url);
                     loading.style.display = 'none';
-                    errorMessage.style.display = 'block';
-                    errorMessage.innerHTML = `Failed to load in iframe:<br><b>${url}</b><br><small>The site may have blocked iframe embedding. Try switching to 'fetch' mode in settings.</small>`;
+                    const errorHtml = `<div style="text-align: center; padding: 20px;">
+                        <h3 style="color: #e74c3c; margin-bottom: 10px;">Failed to Load Dashboard in iframe</h3>
+                        <p style="margin-bottom: 15px;"><b>URL:</b> ${url}</p>
+                        <div style="background: #f8f9fa; border-left: 4px solid #e74c3c; padding: 15px; margin: 20px 0; text-align: left;">
+                            <strong>Common Causes:</strong>
+                            <ul style="margin-top: 10px;">
+                                <li>The site blocks iframe embedding (X-Frame-Options header)</li>
+                                <li>Content Security Policy restrictions</li>
+                                <li>The URL doesn't exist (404 error)</li>
+                                <li>Network connection issues</li>
+                            </ul>
+                            <br>
+                            <strong>Solutions:</strong>
+                            <ol style="margin-top: 10px;">
+                                <li>Try switching to <strong>'fetch' mode</strong> in VS Code settings<br>
+                                    <code>web-panel.renderMode: "fetch"</code></li>
+                                <li>Check if the URL is correct and accessible in your browser</li>
+                                <li>For local development servers, ensure they're running</li>
+                                <li>Some sites (like GitHub, Google) intentionally block iframe embedding</li>
+                            </ol>
+                        </div>
+                        <p style="margin-top: 15px; font-size: 0.9em; color: #666;">
+                            <strong>Note:</strong> iframe mode cannot detect specific HTTP error codes due to browser security restrictions.
+                            Use fetch mode for detailed error information.
+                        </p>
+                    </div>`;
+                    showError(errorHtml);
                 };
                 
+                // Track if iframe actually loaded content
+                let iframeLoaded = false;
+                
                 iframe.onload = () => {
+                    console.log('iframe.onload triggered for URL:', url);
+                    clearTimeout(iframeTimeout);
+                    iframeLoaded = true;
+                    
+                    // Check if iframe actually has content
+                    // For cross-origin, we can't check content, but we can assume it loaded
+                    try {
+                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                        if (iframeDoc && iframeDoc.body) {
+                            // Same-origin, we can check if there's actual content
+                            const hasContent = iframeDoc.body.innerHTML.trim().length > 0;
+                            if (!hasContent) {
+                                console.warn('iframe loaded but has no content');
+                            }
+                        }
+                    } catch (e) {
+                        // Cross-origin, assume it's OK
+                        console.log('Cross-origin iframe loaded');
+                    }
+                    
                     loading.style.display = 'none';
                     iframe.style.display = 'block';
                     
@@ -1390,6 +1554,40 @@
                         }
                     }
                 };
+                
+                // Set a timeout for iframe loading
+                let iframeTimeout = setTimeout(() => {
+                    if (!iframeLoaded) {
+                        console.log('iframe timeout triggered - no load event received');
+                        loading.style.display = 'none';
+                        iframe.style.display = 'none';
+                        const errorHtml = `<div style="text-align: center; padding: 20px;">
+                            <h3 style="color: #e74c3c; margin-bottom: 10px;">Failed to Load Page</h3>
+                            <p style="margin-bottom: 15px;"><b>URL:</b> ${url}</p>
+                            <div style="background: #f8f9fa; border-left: 4px solid #e74c3c; padding: 15px; margin: 20px 0; text-align: left;">
+                                <strong>The page could not be loaded.</strong><br><br>
+                                Possible reasons:
+                                <ul style="margin-top: 10px;">
+                                    <li>The URL doesn't exist (404 error)</li>
+                                    <li>Network connection error</li>
+                                    <li>The server is down or unreachable</li>
+                                    <li>The page blocks iframe embedding</li>
+                                </ul>
+                                <br>
+                                <strong>Recommended actions:</strong>
+                                <ol style="margin-top: 10px;">
+                                    <li>Verify the URL is correct and accessible in your browser</li>
+                                    <li>Try switching to <strong>'fetch' mode</strong> in VS Code settings<br>
+                                        <code>web-panel.renderMode: "fetch"</code><br>
+                                        (Fetch mode provides better error information)</li>
+                                    <li>Check your internet connection</li>
+                                </ol>
+                            </div>
+                        </div>`;
+                        showError(errorHtml);
+                        iframe.src = ''; // Stop loading
+                    }
+                }, 10000); // 10 second timeout (reduced from 30 for better UX)
                 
                 // file:// の場合は拡張機能にリクエスト
                 if (url.startsWith('file://')) {
@@ -1408,7 +1606,14 @@
             const fetchContainer = document.getElementById('fetch-container');
             console.log('Showing default dashboard');
             loading.style.display = 'none';
-            errorMessage.style.display = 'none';
+            // Don't immediately hide error messages - let them stay visible for a moment
+            if (errorMessage.style.display === 'block') {
+                setTimeout(() => {
+                    errorMessage.style.display = 'none';
+                }, 2000); // Keep error visible for 2 seconds
+            } else {
+                errorMessage.style.display = 'none';
+            }
             defaultDashboard.style.display = 'block';
             iframe.style.display = 'none';
             fetchContainer.style.display = 'none';

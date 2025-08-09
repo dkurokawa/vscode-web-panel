@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Icon Generator</title>
+    <style>
+        body {
+            background: #1e1e1e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: monospace;
+            color: #fff;
+        }
+        canvas {
+            border: 1px solid #00d4ff;
+            margin: 20px;
+        }
+        .container {
+            text-align: center;
+        }
+        button {
+            background: #00d4ff;
+            color: #0a0e27;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #00ff88;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="color: #00d4ff;">Web Panel Icon - Cyber Theme</h1>
+        <canvas id="canvas" width="128" height="128"></canvas>
+        <br>
+        <button onclick="downloadIcon()">Download PNG Icon</button>
+        <p>Right-click on the icon above to save it as icon.png</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Background
+        ctx.fillStyle = '#0a0e27';
+        ctx.fillRect(0, 0, 128, 128);
+
+        // Grid pattern
+        ctx.strokeStyle = '#00d4ff';
+        ctx.globalAlpha = 0.2;
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i <= 128; i += 16) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, 128);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, i);
+            ctx.lineTo(128, i);
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+
+        // Draw glow effect function
+        function drawWithGlow(drawFunc, color) {
+            // Draw glow
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 6;
+            drawFunc();
+            
+            // Draw main shape
+            ctx.shadowBlur = 0;
+            drawFunc();
+        }
+
+        // Main panel
+        ctx.fillStyle = '#1a1f3a';
+        ctx.strokeStyle = '#00d4ff';
+        ctx.lineWidth = 2;
+        
+        drawWithGlow(() => {
+            ctx.beginPath();
+            ctx.moveTo(20, 30);
+            ctx.lineTo(108, 30);
+            ctx.lineTo(118, 40);
+            ctx.lineTo(118, 88);
+            ctx.lineTo(108, 98);
+            ctx.lineTo(20, 98);
+            ctx.lineTo(10, 88);
+            ctx.lineTo(10, 40);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }, '#00d4ff');
+
+        // Inner panel
+        ctx.fillStyle = '#252b48';
+        ctx.globalAlpha = 0.8;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(25, 35);
+        ctx.lineTo(103, 35);
+        ctx.lineTo(108, 40);
+        ctx.lineTo(108, 83);
+        ctx.lineTo(103, 88);
+        ctx.lineTo(25, 88);
+        ctx.lineTo(20, 83);
+        ctx.lineTo(20, 40);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        // Code lines
+        const lines = [
+            { x1: 30, y1: 45, x2: 50, y2: 45, color: '#00d4ff' },
+            { x1: 55, y1: 45, x2: 75, y2: 45, color: '#ff006e' },
+            { x1: 80, y1: 45, x2: 95, y2: 45, color: '#00ff88' },
+            { x1: 30, y1: 55, x2: 60, y2: 55, color: '#ffd32c' },
+            { x1: 65, y1: 55, x2: 85, y2: 55, color: '#00d4ff' },
+            { x1: 30, y1: 65, x2: 45, y2: 65, color: '#00ff88' },
+            { x1: 50, y1: 65, x2: 70, y2: 65, color: '#ff006e' },
+            { x1: 75, y1: 65, x2: 95, y2: 65, color: '#00d4ff' },
+            { x1: 30, y1: 75, x2: 55, y2: 75, color: '#00d4ff' },
+            { x1: 60, y1: 75, x2: 80, y2: 75, color: '#ffd32c' }
+        ];
+
+        ctx.lineWidth = 3;
+        lines.forEach(line => {
+            ctx.strokeStyle = line.color;
+            ctx.shadowColor = line.color;
+            ctx.shadowBlur = 4;
+            ctx.beginPath();
+            ctx.moveTo(line.x1, line.y1);
+            ctx.lineTo(line.x2, line.y2);
+            ctx.stroke();
+        });
+        ctx.shadowBlur = 0;
+
+        // Corner accents
+        ctx.fillStyle = '#00d4ff';
+        ctx.shadowColor = '#00d4ff';
+        ctx.shadowBlur = 6;
+        
+        // Top left
+        ctx.beginPath();
+        ctx.moveTo(10, 30);
+        ctx.lineTo(20, 30);
+        ctx.lineTo(10, 40);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Top right
+        ctx.beginPath();
+        ctx.moveTo(108, 30);
+        ctx.lineTo(118, 30);
+        ctx.lineTo(118, 40);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Bottom left
+        ctx.beginPath();
+        ctx.moveTo(10, 88);
+        ctx.lineTo(10, 98);
+        ctx.lineTo(20, 98);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Bottom right
+        ctx.beginPath();
+        ctx.moveTo(108, 98);
+        ctx.lineTo(118, 98);
+        ctx.lineTo(118, 88);
+        ctx.closePath();
+        ctx.fill();
+
+        // VS Code brackets
+        ctx.font = 'bold 20px monospace';
+        ctx.fillStyle = '#00d4ff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = '#00d4ff';
+        ctx.shadowBlur = 8;
+        ctx.fillText('</>', 64, 104);
+
+        function downloadIcon() {
+            const link = document.createElement('a');
+            link.download = 'icon.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+    </script>
+</body>
+</html>

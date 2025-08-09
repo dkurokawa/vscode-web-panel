@@ -2,7 +2,7 @@
   "name": "vscode-web-panel",
   "displayName": "Web Panel",
   "description": "Display web dashboards directly in VS Code panels or side views. Includes a customizable default dashboard shown when no URL is specified.",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "publisher": "dkurokawa",
   "repository": {
     "type": "git",
@@ -74,9 +74,10 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run compile && npm run generate-docs",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "generate-docs": "cd scripts && ./generate-docs.sh",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
     "test": "vscode-test"

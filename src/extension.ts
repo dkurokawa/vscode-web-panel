@@ -147,6 +147,21 @@ class DashboardPanel {
 		const webview = this._panel.webview;
 		this._panel.title = 'Dashboard Panel';
 		this._panel.webview.html = this._getHtmlForWebview(webview);
+
+		// Webviewからのfile://リクエストを受けて安全なURLに変換して返す
+		webview.onDidReceiveMessage(async (msg) => {
+			if (msg && msg.type === 'resolveFileUrl' && msg.fileUrl) {
+				try {
+					// file://パスを抽出
+					const filePath = msg.fileUrl.replace('file://', '');
+					const uri = vscode.Uri.file(filePath);
+					const webviewUri = webview.asWebviewUri(uri).toString();
+					webview.postMessage({ type: 'resolvedFileUrl', webviewUrl: webviewUri });
+				} catch (e) {
+					webview.postMessage({ type: 'resolvedFileUrl', webviewUrl: '' });
+				}
+			}
+		});
 	}
 
 	private _getHtmlForWebview(webview: vscode.Webview) {

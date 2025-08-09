@@ -22,45 +22,55 @@
         }
         
         .header {
-            background-color: var(--vscode-input-background, #3c3c3c);
-            border: 1px solid var(--vscode-input-border, #3c3c3c);
-            border-radius: 4px;
-            padding: 6px;
+            /* 背景・枠・角丸・パディング削除 */
             margin-bottom: 8px;
             display: flex;
             align-items: center;
             gap: 6px;
-        }
+            }
+            .url-float {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                transition: opacity 0.2s, top 0.2s, left 0.2s;
+                width: 100%;
+            }
+            .url-float.floating {
+                position: fixed;
+                top: 8px;
+                left: 8px;
+                z-index: 1000;
+                width: auto;
+                background: transparent;
+                border: none;
+                box-shadow: none;
+                opacity: 1;
+                padding: 0;
+            }
+            .url-float.floating .url-input {
+                display: none;
+            }
+            .url-float.hide {
+                display: none !important;
+            }
         
         .url-input {
             flex: 1;
             padding: 4px 8px;
             background-color: var(--vscode-input-background, #3c3c3c);
             color: var(--vscode-input-foreground, #cccccc);
-            border: 1px solid var(--vscode-input-border, #3c3c3c);
+            border: 1px solid var(--vscode-focusBorder, #0078d4);
             border-radius: 3px;
             font-size: 12px;
             outline: none;
+            box-shadow: none;
         }
         
         .url-input:focus {
             border-color: var(--vscode-focusBorder, #0078d4);
+            box-shadow: 0 0 0 1px var(--vscode-focusBorder, #0078d4);
         }
         
-        .refresh-button {
-            background-color: var(--vscode-button-background, #0e639c);
-            color: var(--vscode-button-foreground, #ffffff);
-            border: none;
-            padding: 4px 8px;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 12px;
-            min-width: 28px;
-        }
-        
-        .refresh-button:hover {
-            background-color: var(--vscode-button-hoverBackground, #1177bb);
-        }
         
         .content-container {
             width: 100%;
@@ -121,6 +131,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+            position: relative;
         }
         
         .service-item {
@@ -128,6 +139,7 @@
             border: 1px solid var(--vscode-panel-border, #3c3c3c);
             border-radius: 4px;
             padding: 12px;
+            margin-bottom: 12px;
         }
         
         .service-header {
@@ -202,80 +214,6 @@
             font-size: 12px;
         }
         
-        .service-list {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        
-        .service-item {
-            background-color: #242424;
-            border: 1px solid #444;
-            border-radius: 4px;
-            padding: 8px;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .service-item:hover {
-            border-color: #00ff88;
-            box-shadow: 0 2px 6px rgba(0, 255, 136, 0.1);
-        }
-        
-        .service-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 6px;
-        }
-        
-        .service-info {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .service-icon {
-            font-size: 16px;
-            filter: drop-shadow(0 0 2px rgba(0, 255, 136, 0.5));
-        }
-        
-        .service-details {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .service-name {
-            color: #00ff88;
-            font-weight: 600;
-            font-size: 11px;
-            margin-bottom: 1px;
-        }
-        
-        .service-description {
-            color: #aaa;
-            font-size: 8px;
-        }
-        
-        .status-indicator {
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            font-size: 8px;
-            font-weight: 500;
-        }
-        
-        .status-dot {
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-        
-        .status-active { background-color: #00ff88; }
-        .status-warning { background-color: #ffaa00; }
-        .status-error { background-color: #ff4444; }
         
         @keyframes pulse {
             0% { opacity: 1; transform: scale(1); }
@@ -283,84 +221,848 @@
             100% { opacity: 1; transform: scale(1); }
         }
         
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 4px;
-            margin-top: 6px;
-            padding-top: 6px;
-            border-top: 1px solid #444;
-        }
-        
-        .metric {
-            background-color: #1a1a1a;
-            border: 1px solid #333;
-            border-radius: 3px;
-            padding: 3px 4px;
-            text-align: left;
-            transition: background-color 0.3s;
+        .toggle-url {
+            margin-right: 6px;
+            background: transparent;
+            border: none;
+            color: var(--vscode-input-foreground, #cccccc);
+            font-size: 16px;
+            cursor: pointer;
+            transition: color 0.2s;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: center;
+            height: 28px;
+            width: 28px;
         }
         
-        .metric:hover {
-            background-color: #2a2a2a;
-            border-color: #555;
+        .url-float.floating .toggle-url {
+            margin-right: 0;
         }
         
-        .metric-label {
-            color: #999;
-            font-size: 7px;
-            flex: 1;
+        .toggle-url:hover {
+            color: var(--vscode-button-hoverBackground, #1177bb);
         }
         
-        .metric-value {
-            color: #00ff88;
-            font-weight: 700;
-            font-size: 9px;
-            text-shadow: 0 0 2px rgba(0, 255, 136, 0.5);
-            margin-left: 3px;
+        /* Theme button styles */
+        .theme-btn {
+            background-color: var(--vscode-button-secondaryBackground, #3a3d41);
+            color: var(--vscode-button-secondaryForeground, #cccccc);
+            border: 1px solid var(--vscode-panel-border, #3c3c3c);
+            padding: 4px 12px;
+            margin: 0 4px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
         }
         
-        .bot-gradient { background: linear-gradient(135deg, #1a1a1a 0%, #0a2a3a 100%); }
-        .rds-gradient { background: linear-gradient(135deg, #1a1a1a 0%, #2a1a3a 100%); }
-        .api-gradient { background: linear-gradient(135deg, #1a1a1a 0%, #3a2a1a 100%); }
+        .theme-btn:hover {
+            background-color: var(--vscode-button-secondaryHoverBackground, #45494e);
+            border-color: var(--vscode-focusBorder, #0078d4);
+        }
         
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-            font-style: italic;
+        .theme-btn.active {
+            background-color: var(--vscode-button-background, #0e639c);
+            color: var(--vscode-button-foreground, #ffffff);
+            border-color: var(--vscode-button-background, #0e639c);
+        }
+        
+        /* Theme styles */
+        /* レトロテーマ - レトロPC風 */
+        body.theme-retro {
+            --theme-bg: #000000;
+            --theme-fg: #00ff00;
+            --theme-accent: #00aa00;
+            --theme-panel: #001100;
+            font-family: 'Courier New', monospace;
+        }
+        body.theme-retro .service-item {
+            background-color: var(--theme-panel);
+            border: 2px solid #00ff00;
+            box-shadow: 0 0 10px rgba(0,255,0,0.3);
+            color: #00ff00;
+        }
+        body.theme-retro .service-name {
+            color: #00ff00;
+            text-transform: uppercase;
+        }
+        body.theme-retro .service-description {
+            color: #00aa00;
+        }
+        body.theme-retro .status-dot.status-active { 
+            background-color: #00ff00;
+            box-shadow: 0 0 5px #00ff00;
+        }
+        body.theme-retro .status-dot.status-warning { background-color: #ffaa00; }
+        body.theme-retro .metric { 
+            background-color: #002200;
+            border: 1px solid #00ff00;
+        }
+        body.theme-retro .metric-label { color: #00aa00; }
+        body.theme-retro .metric-value { color: #00ff00; }
+        
+        /* ビンテージテーマ - 古びた茶色 */
+        body.theme-vintage {
+            --theme-bg: #2a2520;
+            --theme-fg: #d4c5a0;
+            --theme-accent: #ff6b4a;
+            --theme-panel: #3d342b;
+            font-family: 'Georgia', serif;
+        }
+        body.theme-vintage .service-item {
+            background-color: var(--theme-panel);
+            border-color: #5a4d40;
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+            position: relative;
+        }
+        body.theme-vintage .service-item::before {
+            content: '';
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, transparent 30%, rgba(139,69,19,0.1) 50%, transparent 70%);
+            pointer-events: none;
+        }
+        body.theme-vintage .status-dot.status-active { background-color: #8b6914; }
+        body.theme-vintage .status-dot.status-warning { background-color: #ff6b4a; }
+        body.theme-vintage .metric { 
+            background-color: #1f1915;
+            border-color: #5a4d40;
         }
         
-        .error-message {
-            text-align: center;
-            padding: 20px;
-            color: #ff4444;
-            font-style: italic;
+        /* ボタニカルテーマ */
+        body.theme-botanical {
+            --theme-bg: #e8f5e8;
+            --theme-fg: #1b5e20;
+            --theme-accent: #4caf50;
+            --theme-panel: #c8e6c9;
+        }
+        body.theme-botanical .service-item {
+            background-color: var(--theme-panel);
+            border: 2px solid #81c784;
+            color: var(--theme-fg);
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 0 2px #81c784, inset 0 0 0 4px #a5d6a7;
+        }
+        body.theme-botanical .service-item::after {
+            content: '🌿🍃🌱🌿🍃🌱🌿🍃';
             position: absolute;
-            top: 50%;
+            top: -2px;
+            left: -10px;
+            right: -10px;
+            font-size: 16px;
+            letter-spacing: 10px;
+            opacity: 0.3;
+            pointer-events: none;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        body.theme-botanical .service-item::before {
+            content: '🌿';
+            position: absolute;
+            font-size: 60px;
+            opacity: 0.1;
+            right: 10px;
+            bottom: -10px;
+            transform: rotate(-15deg);
+        }
+        body.theme-botanical .service-item:nth-child(odd)::before {
+            content: '🌱';
+        }
+        body.theme-botanical .service-item:nth-child(3n)::before {
+            content: '🍃';
+        }
+        body.theme-botanical .service-name,
+        body.theme-botanical .metric-value {
+            color: var(--theme-fg);
+            font-weight: 600;
+        }
+        body.theme-botanical .service-description,
+        body.theme-botanical .metric-label {
+            color: #388e3c;
+        }
+        body.theme-botanical .status-dot.status-active { 
+            background-color: #4caf50;
+            box-shadow: 0 0 0 2px rgba(76,175,80,0.3);
+        }
+        body.theme-botanical .status-dot.status-warning { background-color: #ff9800; }
+        body.theme-botanical .metric {
+            background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+            border: 1px solid #a5d6a7;
+        }
+        
+        /* トイテーマ - おもちゃ工場 */
+        @keyframes toy-bounce {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+        }
+        @keyframes toy-move {
+            0% { left: calc(100% + 30px); }
+            100% { left: -30px; }
+        }
+        body.theme-toy {
+            --theme-bg: #fff8dc;
+            --theme-fg: #333;
+            --theme-accent: #ff4757;
+            --theme-panel: #ffeaa7;
+            position: relative;
+            overflow: hidden;
+        }
+        body.theme-toy .service-list::before {
+            content: '🚂';
+            position: absolute;
+            top: 100px;
+            font-size: 40px;
+            animation: toy-move 15s linear infinite;
+            z-index: 10;
+        }
+        body.theme-toy::after {
+            content: '🎈🎪🎨';
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 30px;
+            animation: toy-bounce 3s ease-in-out infinite;
+        }
+        body.theme-toy .service-item {
+            background-color: var(--theme-panel);
+            border: 3px solid #fdcb6e;
+            border-radius: 20px;
+            color: var(--theme-fg);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: visible;
+        }
+        body.theme-toy .service-item::after {
+            content: attr(data-emoji);
+            position: absolute;
+            top: -15px;
+            right: 10px;
+            font-size: 30px;
+            animation: toy-bounce 2s ease-in-out infinite;
+        }
+        body.theme-toy .service-item:nth-child(1)::after { content: '🤖'; animation-delay: 0s; }
+        body.theme-toy .service-item:nth-child(2)::after { content: '🎮'; animation-delay: 0.5s; }
+        body.theme-toy .service-item:nth-child(3)::after { content: '🎯'; animation-delay: 1s; }
+        body.theme-toy .service-name,
+        body.theme-toy .metric-value {
+            color: var(--theme-fg);
+            font-weight: bold;
+            font-family: 'Comic Sans MS', cursive;
+        }
+        body.theme-toy .status-dot {
+            width: 12px;
+            height: 12px;
+            animation: toy-bounce 1.5s ease-in-out infinite;
+        }
+        body.theme-toy .status-dot.status-active { background-color: #00b894; }
+        body.theme-toy .status-dot.status-warning { background-color: #fdcb6e; }
+        body.theme-toy .metric {
+            background: linear-gradient(135deg, #74b9ff 0%, #a29bfe 100%);
+            border: none;
+            border-radius: 15px;
+            color: white;
+            transform: rotate(-2deg);
+        }
+        body.theme-toy .metric:nth-child(2) { transform: rotate(2deg); }
+        body.theme-toy .metric:nth-child(3) { transform: rotate(-1deg); }
+        body.theme-toy .metric-label { color: rgba(255,255,255,0.9); }
+        body.theme-toy .metric-value { color: white; }
+        
+        /* ネオンテーマ */
+        body.theme-neon {
+            --theme-bg: #0a0a0a;
+            --theme-fg: #00ff41;
+            --theme-accent: #ff0080;
+            --theme-panel: #1a1a2e;
+        }
+        body.theme-neon .service-item:nth-child(1) {
+            background-color: var(--theme-panel);
+            border: 3px solid #ff0080;
+            box-shadow: 0 0 20px rgba(255,0,128,0.5), inset 0 0 20px rgba(255,0,128,0.1);
+            color: var(--theme-fg);
+        }
+        body.theme-neon .service-item:nth-child(2) {
+            background-color: var(--theme-panel);
+            border: 3px solid #00ff41;
+            box-shadow: 0 0 20px rgba(0,255,65,0.5), inset 0 0 20px rgba(0,255,65,0.1);
+            color: var(--theme-fg);
+        }
+        body.theme-neon .service-item:nth-child(3) {
+            background-color: var(--theme-panel);
+            border: 3px solid #0fbcf9;
+            box-shadow: 0 0 20px rgba(15,188,249,0.5), inset 0 0 20px rgba(15,188,249,0.1);
+            color: var(--theme-fg);
+        }
+        body.theme-neon .service-item {
+            background-color: var(--theme-panel);
+            border: 3px solid #00ff41;
+            box-shadow: 0 0 20px rgba(0,255,65,0.5);
+            color: var(--theme-fg);
+        }
+        body.theme-neon .service-name {
+            color: #00ff41;
+            text-shadow: 0 0 10px rgba(0,255,65,0.8);
+            font-weight: bold;
+        }
+        body.theme-neon .service-description,
+        body.theme-neon .metric-label {
+            color: #0fbcf9;
+        }
+        body.theme-neon .metric-value {
+            color: #ffd32c;
+            text-shadow: 0 0 5px rgba(255,211,44,0.8);
+        }
+        body.theme-neon .status-dot.status-active { 
+            background-color: #00ff41;
+            box-shadow: 0 0 10px #00ff41;
+        }
+        body.theme-neon .status-dot.status-warning { 
+            background-color: #ff0080;
+            box-shadow: 0 0 10px #ff0080;
+        }
+        body.theme-neon .metric {
+            background-color: #16213e;
+            border: 2px solid #0fbcf9;
+            box-shadow: 0 0 5px rgba(15,188,249,0.3);
+        }
+        
+        /* ベガステーマ */
+        @keyframes vegas-lights {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        body.theme-vegas {
+            --theme-bg: #1a0033;
+            --theme-fg: #ffd700;
+            --theme-accent: #ff1493;
+            --theme-panel: #2d1b69;
+        }
+        body.theme-vegas .service-item {
+            background: linear-gradient(135deg, #2d1b69 0%, #3d2b79 100%);
+            border: 4px solid #ffd700;
+            box-shadow: 0 0 30px rgba(255,215,0,0.5), inset 0 0 20px rgba(255,20,147,0.2);
+            color: var(--theme-fg);
+            position: relative;
+        }
+        body.theme-vegas .service-item::before {
+            content: '💎';
+            position: absolute;
+            top: -20px;
+            right: 20px;
+            font-size: 25px;
+            animation: vegas-lights 1.5s ease-in-out infinite;
+        }
+        body.theme-vegas .service-name {
+            color: #ffd700;
+            text-shadow: 0 0 15px rgba(255,215,0,1), 0 0 30px rgba(255,215,0,0.5);
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        body.theme-vegas .service-description {
+            color: #ff69b4;
+            text-shadow: 0 0 5px rgba(255,105,180,0.5);
+        }
+        body.theme-vegas .metric-label {
+            color: #ff69b4;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        body.theme-vegas .metric-value {
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255,255,255,1);
+            font-weight: bold;
+        }
+        body.theme-vegas .status-dot {
+            animation: pulse 2s infinite;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        body.theme-vegas .status-dot.status-active { 
+            background-color: #00ff00;
+            box-shadow: 0 0 15px #00ff00;
+        }
+        body.theme-vegas .status-dot.status-warning { 
+            background-color: #ffd700;
+            box-shadow: 0 0 15px #ffd700;
+        }
+        body.theme-vegas .metric {
+            background: linear-gradient(135deg, #ff1493 0%, #ff69b4 100%);
+            border: 2px solid #ffd700;
+            color: white;
+            box-shadow: 0 0 10px rgba(255,20,147,0.5);
+        }
+        body.theme-vegas .metric-label,
+        body.theme-vegas .metric-value { color: white; }
+        
+        
+        /* ウェスタンテーマ - 西部開拓風 */
+        body.theme-western {
+            --theme-bg: #d4a574;
+            --theme-fg: #3e2723;
+            --theme-accent: #8d6e63;
+            --theme-panel: #efebe9;
+            font-family: 'Georgia', serif;
+        }
+        body.theme-western .service-item {
+            background-color: var(--theme-panel);
+            border: 3px solid #6d4c41;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+            color: var(--theme-fg);
+            position: relative;
+            border-radius: 0;
+        }
+        body.theme-western .service-item::before {
+            content: '⭐';
+            position: absolute;
+            top: -15px;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translateX(-50%);
+            font-size: 25px;
+            color: #ffd700;
+        }
+        body.theme-western .service-item::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: repeating-linear-gradient(
+                90deg,
+                #6d4c41 0px,
+                #6d4c41 5px,
+                transparent 5px,
+                transparent 10px
+            );
+        }
+        body.theme-western .service-name {
+            color: #5d4037;
+            font-weight: bold;
+            font-size: 16px;
+            text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+        }
+        body.theme-western .service-description {
+            color: #6d4c41;
+            font-style: italic;
+        }
+        body.theme-western .status-dot.status-active { 
+            background-color: #689f38;
+            box-shadow: 0 0 5px rgba(104,159,56,0.5);
+        }
+        body.theme-western .status-dot.status-warning { 
+            background-color: #ff6f00;
+            box-shadow: 0 0 5px rgba(255,111,0,0.5);
+        }
+        body.theme-western .metric {
+            background-color: #6d4c41;
+            border: 1px solid #8d6e63;
+            color: #fff3e0;
+        }
+        
+        
+        
+        /* サイバーパンクテーマ - ネオンフューチャー */
+        @keyframes cyber-glitch {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-2px); }
+            40% { transform: translateX(2px); }
+            60% { transform: translateX(-1px); }
+        }
+        body.theme-cyber {
+            --theme-bg: #0a0e27;
+            --theme-fg: #00d4ff;
+            --theme-accent: #ff006e;
+            --theme-panel: #1a1f3a;
+            font-family: 'Orbitron', monospace;
+        }
+        body.theme-cyber .service-item {
+            background: linear-gradient(135deg, #1a1f3a 0%, #252b48 100%);
+            border: 2px solid #00d4ff;
+            box-shadow: 0 0 20px rgba(0,212,255,0.5), inset 0 0 20px rgba(0,212,255,0.1);
+            color: var(--theme-fg);
+            position: relative;
+            clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+        }
+        body.theme-cyber .service-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, #00d4ff 50%, transparent 100%);
+            animation: cyber-glitch 3s infinite;
+        }
+        body.theme-cyber .service-name {
+            color: #00d4ff;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px rgba(0,212,255,0.8);
+            animation: cyber-glitch 5s infinite;
+        }
+        body.theme-cyber .service-description {
+            color: #ff006e;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        body.theme-cyber .status-dot.status-active { 
+            background-color: #00ff88;
+            box-shadow: 0 0 10px #00ff88;
+            border: 1px solid #00d4ff;
+        }
+        body.theme-cyber .status-dot.status-warning { 
+            background-color: #ff006e;
+            box-shadow: 0 0 10px #ff006e;
+            animation: pulse 1s infinite;
+        }
+        body.theme-cyber .metric {
+            background: rgba(0,212,255,0.1);
+            border: 1px solid #00d4ff;
+            color: #00d4ff;
+            clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+        }
+        
+        /* パステルカワイイテーマ - Kawaiiパステル */
+        @keyframes kawaii-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        @keyframes kawaii-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        body.theme-pastel {
+            --theme-bg: #fef5ff;
+            --theme-fg: #8b5a8c;
+            --theme-accent: #ff96b4;
+            --theme-panel: #ffe8f0;
+            font-family: 'Comic Neue', 'M PLUS Rounded 1c', sans-serif;
+        }
+        body.theme-pastel .service-item {
+            background: linear-gradient(135deg, #ffe8f0 0%, #e8f0ff 50%, #f0e8ff 100%);
+            border: 3px solid #ffb3d9;
+            border-radius: 25px;
+            box-shadow: 0 8px 16px rgba(255,150,180,0.3);
+            color: var(--theme-fg);
+            position: relative;
+            animation: kawaii-float 3s ease-in-out infinite;
+        }
+        body.theme-pastel .service-item::before {
+            content: '✨';
+            position: absolute;
+            top: -15px;
+            right: 20px;
+            font-size: 25px;
+            animation: kawaii-spin 4s linear infinite;
+        }
+        body.theme-pastel .service-item::after {
+            content: '🌸';
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            font-size: 20px;
+            opacity: 0.5;
+        }
+        body.theme-pastel .service-item:nth-child(2)::after { content: '🌼'; }
+        body.theme-pastel .service-item:nth-child(3)::after { content: '🌷'; }
+        body.theme-pastel .service-name {
+            color: #d4669a;
+            font-weight: bold;
+            font-size: 16px;
+            text-shadow: 1px 1px 0 rgba(255,255,255,0.8);
+        }
+        body.theme-pastel .service-description {
+            color: #a88ca8;
+            font-size: 13px;
+        }
+        body.theme-pastel .status-dot {
+            width: 10px;
+            height: 10px;
+            border: 2px solid white;
+        }
+        body.theme-pastel .status-dot.status-active { 
+            background-color: #96f2d7;
+            box-shadow: 0 0 10px rgba(150,242,215,0.5);
+        }
+        body.theme-pastel .status-dot.status-warning { 
+            background-color: #feca57;
+            box-shadow: 0 0 10px rgba(254,202,87,0.5);
+        }
+        body.theme-pastel .metric {
+            background: linear-gradient(135deg, #ffccdd 0%, #ddccff 100%);
+            border: 2px solid white;
+            border-radius: 15px;
+            color: #8b5a8c;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* ダークモードテーマ - ミニマルダーク */
+        body.theme-dark {
+            --theme-bg: #0d1117;
+            --theme-fg: #c9d1d9;
+            --theme-accent: #58a6ff;
+            --theme-panel: #161b22;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        body.theme-dark .service-item {
+            background-color: var(--theme-panel);
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+            color: var(--theme-fg);
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        body.theme-dark .service-item:hover {
+            border-color: #58a6ff;
+            box-shadow: 0 0 0 1px #58a6ff, 0 4px 12px rgba(88,166,255,0.1);
+            transform: translateY(-2px);
+        }
+        body.theme-dark .service-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(180deg, #58a6ff 0%, #1f6feb 100%);
+            border-radius: 3px 0 0 3px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        body.theme-dark .service-item:hover::before {
+            opacity: 1;
+        }
+        body.theme-dark .service-name {
+            color: #79c0ff;  /* 関数名のような青 */
+            font-weight: 600;
+            font-size: 14px;
+        }
+        body.theme-dark .service-description {
+            color: #a5d6ff;  /* コメントのような薄い青 */
+            font-size: 12px;
+            font-style: italic;
+        }
+        body.theme-dark .service-info > div:first-child {
+            color: #ffa657;  /* アイコンをオレンジに */
+        }
+        body.theme-dark .status-indicator span {
+            color: #e3b341;  /* ステータステキストを黄色に */
+        }
+        body.theme-dark .status-dot.status-active { 
+            background-color: #3fb950;
+            box-shadow: 0 0 0 2px rgba(63,185,80,0.2);
+        }
+        body.theme-dark .status-dot.status-warning { 
+            background-color: #d29922;
+            box-shadow: 0 0 0 2px rgba(210,153,34,0.2);
+        }
+        body.theme-dark .metric {
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        body.theme-dark .metric:hover {
+            background-color: #161b22;
+            border-color: #58a6ff;
+        }
+        body.theme-dark .metric-label {
+            color: #ff7b72;  /* 変数名のような赤 */
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        body.theme-dark .metric-value {
+            color: #a5d6ff;  /* 値を明るい青に */
+            font-weight: 600;
+        }
+        body.theme-dark .metric:nth-child(1) .metric-value { color: #7ee787; }  /* 緑 */
+        body.theme-dark .metric:nth-child(2) .metric-value { color: #ffa657; }  /* オレンジ */
+        body.theme-dark .metric:nth-child(3) .metric-value { color: #d2a8ff; }  /* 紫 */
+        
+        /* レガシーテーマ - 90年代インターネット風 */
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        @keyframes rainbow {
+            0% { color: #FF0000; }
+            16% { color: #FF7F00; }
+            33% { color: #FFFF00; }
+            50% { color: #00FF00; }
+            66% { color: #0000FF; }
+            83% { color: #4B0082; }
+            100% { color: #9400D3; }
+        }
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        body.theme-legacy {
+            --theme-bg: #000080;  /* Navy blue */
+            --theme-fg: #FFFF00;  /* Yellow */
+            --theme-accent: #FF00FF;  /* Magenta */
+            --theme-panel: #C0C0C0;  /* Silver */
+            font-family: 'Times New Roman', serif;
+            background-image: repeating-linear-gradient(
+                0deg,
+                #000080,
+                #000080 2px,
+                #0000AA 2px,
+                #0000AA 4px
+            );
+        }
+        body.theme-legacy .default-dashboard {
+            background-image: url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
+        }
+        body.theme-legacy .service-item {
+            background-color: var(--theme-panel);
+            border: 4px ridge #808080;
+            box-shadow: 2px 2px 0 #000000;
+            color: #000000;
+            position: relative;
+            margin-bottom: 16px;
+        }
+        body.theme-legacy .service-item::before {
+            content: '🔥NEW!🔥';
+            position: absolute;
+            top: -20px;
+            right: 10px;
+            font-size: 16px;
+            color: #FF0000;
+            font-weight: bold;
+            animation: blink 1s linear infinite;
+        }
+        body.theme-legacy .service-item::after {
+            content: 'Under Construction 🚧';
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #FF00FF;
+            text-decoration: underline;
+        }
+        body.theme-legacy .service-name {
+            color: #0000FF;
+            font-weight: bold;
+            font-size: 18px;
+            text-decoration: underline;
+            text-shadow: 2px 2px 0 #FFFF00;
+            animation: rainbow 5s linear infinite;
+        }
+        body.theme-legacy .service-description {
+            color: #800080;
+            font-style: italic;
+            font-size: 14px;
+            background-color: #FFFF00;
+            padding: 2px 4px;
+            display: inline-block;
+        }
+        body.theme-legacy .status-indicator {
+            background: linear-gradient(90deg, #FF0000, #00FF00);
+            padding: 2px 8px;
+            border: 2px solid #000000;
+        }
+        body.theme-legacy .status-indicator span {
+            color: #FFFFFF;
+            font-weight: bold;
+            text-transform: uppercase;
+            animation: blink 2s linear infinite;
+        }
+        body.theme-legacy .status-dot {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #000000;
+        }
+        body.theme-legacy .status-dot.status-active { 
+            background-color: #00FF00;
+            animation: blink 0.5s linear infinite;
+        }
+        body.theme-legacy .status-dot.status-warning { 
+            background-color: #FFFF00;
+            animation: blink 0.3s linear infinite;
+        }
+        body.theme-legacy .metric {
+            background: linear-gradient(45deg, #FF0000, #0000FF);
+            border: 3px double #FFFF00;
+            color: #FFFFFF;
+            font-weight: bold;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        body.theme-legacy .metric::before {
+            content: '<<<';
+            position: absolute;
+            left: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #FFFF00;
+            animation: marquee 3s linear infinite;
+        }
+        body.theme-legacy .metric::after {
+            content: '>>>';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #FFFF00;
+            animation: marquee 3s linear infinite reverse;
+        }
+        body.theme-legacy .metric-label {
+            color: #FFFF00;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 2px;
+        }
+        body.theme-legacy .metric-value {
+            color: #FFFFFF;
+            font-size: 16px;
+            text-shadow: 1px 1px 0 #000000, -1px -1px 0 #000000, 1px -1px 0 #000000, -1px 1px 0 #000000;
+        }
+        body.theme-legacy #theme-switcher {
+            background-color: #FFFF00;
+            border: 3px solid #FF0000;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        body.theme-legacy .theme-btn {
+            background-color: #C0C0C0;
+            border: 2px outset #FFFFFF;
+            color: #000000;
+            font-weight: bold;
+        }
+        body.theme-legacy .theme-btn:hover {
+            border-style: inset;
+            background-color: #808080;
+        }
+        body.theme-legacy .theme-btn.active {
+            background-color: #0000FF;
+            color: #FFFF00;
+            border: 2px inset #000080;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <input type="text" 
-               class="url-input" 
-               id="dashboard-url" 
-               placeholder="Enter dashboard URL (e.g., http://localhost:3019/dashboard)"
-               value="">
-        <button class="refresh-button" onclick="loadDashboard()">🔄</button>
+        <div id="url-float" class="url-float">
+            <button id="toggle-url" class="toggle-url" title="Show/hide URL input">🔽</button>
+            <input type="text" 
+                   id="dashboard-url" 
+                   class="url-input" 
+                   placeholder="https://example.com/dashboard">
+        </div>
     </div>
     
     <div class="content-container">
+        <div id="dashboard-annotation"></div>
         <div class="loading" id="loading" style="display: none;">
             Loading dashboard...
         </div>
@@ -377,6 +1079,21 @@
         <div id="fetch-container" style="width:100%;height:100%;overflow:auto;display:none;"></div>
         <!-- Default dashboard -->
         <div class="default-dashboard" id="default-dashboard">
+            <div id="theme-switcher" style="margin-bottom:20px; text-align:center;">
+                <span style="font-size:13px;">Theme:</span>
+                <button class="theme-btn" data-theme="simple">シンプル</button>
+                <button class="theme-btn" data-theme="retro">レトロ</button>
+                <button class="theme-btn" data-theme="vintage">ビンテージ</button>
+                <button class="theme-btn" data-theme="botanical">ボタニカル</button>
+                <button class="theme-btn" data-theme="toy">トイ</button>
+                <button class="theme-btn" data-theme="neon">ネオン</button>
+                <button class="theme-btn" data-theme="vegas">ベガス</button>
+                <button class="theme-btn" data-theme="western">ウェスタン</button>
+                <button class="theme-btn" data-theme="cyber">サイバー</button>
+                <button class="theme-btn" data-theme="pastel">パステル</button>
+                <button class="theme-btn" data-theme="dark">ダーク</button>
+                <button class="theme-btn" data-theme="legacy">レガシー</button>
+            </div>
             <div class="service-list">
                 <div class="service-item">
                     <div class="service-header">
@@ -407,6 +1124,8 @@
                         </div>
                     </div>
                 </div>
+                <div class="service-item" id="annotation-service-item"></div>
+                <!-- ...既存の他のservice-item... -->
                 
                 <div class="service-item">
                     <div class="service-header">
@@ -468,12 +1187,60 @@
                     </div>
                 </div>
             </div>
+            </div>
         </div>
     </div>
     
     <script>
+        // テーマ切り替え
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.body.classList.remove('theme-simple', 'theme-retro', 'theme-vintage', 'theme-botanical', 'theme-toy', 'theme-neon', 'theme-vegas', 'theme-western', 'theme-cyber', 'theme-pastel', 'theme-dark', 'theme-legacy');
+                document.body.classList.add('theme-' + btn.dataset.theme);
+                // Remove active class from all buttons
+                document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+                // Add active class to clicked button
+                btn.classList.add('active');
+            });
+        });
+        // デフォルトテーマ
+        document.body.classList.add('theme-simple');
+        document.querySelector('[data-theme="simple"]').classList.add('active');
         // Send message via VSCode API
         const vscode = acquireVsCodeApi();
+
+        // 日本語・英語注釈を自動表示
+        function setDashboardAnnotation() {
+            const lang = (navigator.language || '').toLowerCase();
+            let html = '';
+            if (lang.startsWith('ja')) {
+                html = `
+                <div style="margin-bottom:16px; padding:12px; background:var(--vscode-input-background,#333); border-radius:4px; border:1px solid var(--vscode-panel-border,#3c3c3c);">
+                    <b>これはデモ表示です</b><br>
+                    この画面はサンプルのダッシュボードです。<br>
+                    実際には「URL入力欄」に <b>ローカルで起動したWebサービス</b> や <b>本番環境のURL</b> を入力してご利用ください。<br>
+                    <br>
+                    <b>ファイルURLの例:</b><br>
+                    <code>file:///Users/yourname/projects/report.html</code><br>
+                    <span style="font-size:12px; color:#aaa;">（絶対パスで指定。Macの場合は「file:///」+フルパス）</span>
+                </div>
+                `;
+            } else {
+                html = `
+                <div style="margin-bottom:16px; padding:12px; background:var(--vscode-input-background,#333); border-radius:4px; border:1px solid var(--vscode-panel-border,#3c3c3c);">
+                    <b>This is a demo dashboard</b><br>
+                    This screen is a sample dashboard.<br>
+                    For actual use, please enter the <b>local web service URL</b> or <b>production URL</b> in the URL input field.<br>
+                    <br>
+                    <b>File URL example:</b><br>
+                    <code>file:///Users/yourname/projects/report.html</code><br>
+                    <span style="font-size:12px; color:#aaa;">(Specify absolute path. On Mac, use "file:///" + full path)</span>
+                </div>
+                `;
+            }
+            document.getElementById('annotation-service-item').innerHTML = html;
+        }
+        setDashboardAnnotation();
         
         // Configuration from VS Code settings (will be injected by extension)
         let config = {
@@ -624,8 +1391,12 @@
                     }
                 };
                 
-                // Load the URL
-                iframe.src = url;
+                // file:// の場合は拡張機能にリクエスト
+                if (url.startsWith('file://')) {
+                    vscode.postMessage({ type: 'resolveFileUrl', fileUrl: url });
+                } else {
+                    iframe.src = url;
+                }
             }
         }
         
@@ -689,6 +1460,44 @@
             if (apiErrors) apiErrors.textContent = Math.floor(Math.random() * 4);
         }
         
+        // Toggle URL input visibility
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleBtn = document.getElementById('toggle-url');
+            const urlInputEl = document.getElementById('dashboard-url');
+            const urlFloat = document.getElementById('url-float');
+            let urlCollapsed = false;
+            function updateToggleIcon() {
+                toggleBtn.textContent = urlCollapsed ? '▶️' : '🔽';
+            }
+            function setFloating(floating) {
+                if (floating) {
+                    urlFloat.classList.add('floating');
+                } else {
+                    urlFloat.classList.remove('floating');
+                }
+            }
+            toggleBtn.addEventListener('click', function() {
+                urlCollapsed = !urlCollapsed;
+                if (urlCollapsed) {
+                    setFloating(true);
+                } else {
+                    setFloating(false);
+                    urlInputEl.focus();
+                }
+                updateToggleIcon();
+            });
+            updateToggleIcon();
+        });
+        // 拡張機能から安全なWebview用URLを受け取る
+        window.addEventListener('message', event => {
+            const msg = event.data;
+            if (msg && msg.type === 'resolvedFileUrl' && msg.webviewUrl) {
+                const iframe = document.getElementById('dashboard-iframe');
+                if (iframe) {
+                    iframe.src = msg.webviewUrl;
+                }
+            }
+        });
     </script>
 </body>
 </html>

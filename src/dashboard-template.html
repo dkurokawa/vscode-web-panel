@@ -248,6 +248,94 @@
             color: var(--vscode-button-hoverBackground, #1177bb);
         }
         
+        /* Details element styling */
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+        
+        details summary::-moz-list-bullet {
+            display: none;
+        }
+        
+        details summary {
+            list-style: none;
+        }
+        
+        details summary::before {
+            content: '▶';
+            display: inline-block;
+            margin-right: 6px;
+            transition: transform 0.2s;
+        }
+        
+        details[open] summary::before {
+            transform: rotate(90deg);
+        }
+        
+        details summary:hover {
+            background: var(--vscode-list-hoverBackground, #2a2d2e) !important;
+        }
+        
+        /* URL History Dropdown */
+        .url-history-dropdown {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: var(--vscode-dropdown-background, #3c3c3c);
+            border: 1px solid var(--vscode-dropdown-border, #3c3c3c);
+            border-radius: 3px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(-4px);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+        
+        .url-history-dropdown.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Add arrow indicator */
+        .url-history-dropdown::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 20px;
+            width: 12px;
+            height: 12px;
+            background: var(--vscode-dropdown-background, #3c3c3c);
+            border-left: 1px solid var(--vscode-dropdown-border, #3c3c3c);
+            border-top: 1px solid var(--vscode-dropdown-border, #3c3c3c);
+            transform: rotate(45deg);
+        }
+        
+        .url-history-item {
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--vscode-dropdown-foreground, #cccccc);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .url-history-item:hover {
+            background: var(--vscode-list-hoverBackground, #2a2d2e);
+        }
+        
+        .url-history-item.selected {
+            background: var(--vscode-list-activeSelectionBackground, #094771);
+            color: var(--vscode-list-activeSelectionForeground, #ffffff);
+        }
+        
+        .url-float {
+            position: relative;
+        }
+        
         /* Theme button styles */
         .theme-btn {
             background-color: var(--vscode-button-secondaryBackground, #3a3d41);
@@ -1068,17 +1156,18 @@
             <input type="text" 
                    id="dashboard-url" 
                    class="url-input" 
-                   placeholder="https://example.com/dashboard">
+                   placeholder="https://example.com/dashboard"
+                   autocomplete="off">
+            <div id="url-history-dropdown" class="url-history-dropdown" style="display: none;"></div>
             <!-- デバッグボタン - 必要な時はコメントを外してください -->
             <!-- <button onclick="showDebug()" style="margin-left: 5px; padding: 4px 8px; cursor: pointer;" title="Show debug console">🐛</button> -->
-            <button onclick="loadDashboard()" style="margin-left: 5px; padding: 4px 8px; cursor: pointer;" title="Load URL">Go</button>
+            <!-- <button onclick="loadDashboard()" style="margin-left: 5px; padding: 4px 8px; cursor: pointer;" title="Load URL">Go</button> -->
             <!-- <button onclick="minimalTest()" style="margin-left: 5px; padding: 4px 8px; cursor: pointer; background: #f44;" title="Test iframe">Test</button> -->
             <!-- <button onclick="loadHttpUrl('http://localhost:9443')" style="margin-left: 5px; padding: 4px 8px; cursor: pointer;" title="Load localhost">9443</button> -->
         </div>
     </div>
     
     <div class="content-container">
-        <div id="dashboard-annotation"></div>
         <div class="loading" id="loading" style="display: none;">
             Loading dashboard...
         </div>
@@ -1117,6 +1206,7 @@
                 <button class="theme-btn" data-theme="dark">ダーク</button>
                 <button class="theme-btn" data-theme="legacy">レガシー</button>
             </div>
+            <div id="dashboard-annotation"></div>
             <div class="service-list">
                 <div class="service-item">
                     <div class="service-header">
@@ -1147,8 +1237,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="service-item" id="dashboard-annotation"></div>
-                <!-- ...既存の他のservice-item... -->
                 
                 <div class="service-item">
                     <div class="service-header">
@@ -1232,6 +1320,142 @@
         // Send message via VSCode API
         const vscode = acquireVsCodeApi();
         
+        // URL History Management
+        const MAX_HISTORY_ITEMS = 5;
+        
+        function getUrlHistory() {
+            const state = vscode.getState();
+            return state?.urlHistory || [];
+        }
+        
+        function saveUrlHistory(history) {
+            const currentState = vscode.getState() || {};
+            vscode.setState({ ...currentState, urlHistory: history });
+        }
+        
+        function addToUrlHistory(url) {
+            if (!url || !url.trim()) return;
+            
+            let history = getUrlHistory();
+            
+            // Remove the URL if it already exists
+            history = history.filter(item => item !== url);
+            
+            // Add the new URL to the beginning
+            history.unshift(url);
+            
+            // Keep only the last MAX_HISTORY_ITEMS
+            history = history.slice(0, MAX_HISTORY_ITEMS);
+            
+            saveUrlHistory(history);
+            updateUrlHistoryDatalist();
+        }
+        
+        function updateUrlHistoryDatalist() {
+            const dropdown = document.getElementById('url-history-dropdown');
+            const history = getUrlHistory();
+            
+            // Clear existing items
+            dropdown.innerHTML = '';
+            
+            // Add items for each history entry
+            history.forEach((url, index) => {
+                const item = document.createElement('div');
+                item.className = 'url-history-item';
+                item.textContent = url;
+                item.setAttribute('data-index', index);
+                
+                item.addEventListener('click', () => {
+                    document.getElementById('dashboard-url').value = url;
+                    hideUrlHistoryDropdown();
+                    loadDashboard();
+                });
+                
+                dropdown.appendChild(item);
+            });
+        }
+        
+        // Dropdown management
+        let selectedHistoryIndex = -1;
+        
+        function showUrlHistoryDropdown() {
+            const dropdown = document.getElementById('url-history-dropdown');
+            const history = getUrlHistory();
+            
+            if (history.length > 0) {
+                updateUrlHistoryDatalist();
+                dropdown.style.display = 'block';
+                // Force a reflow to ensure the transition works
+                void dropdown.offsetHeight;
+                dropdown.classList.add('show');
+                selectedHistoryIndex = -1;
+            }
+        }
+        
+        function hideUrlHistoryDropdown() {
+            const dropdown = document.getElementById('url-history-dropdown');
+            dropdown.classList.remove('show');
+            // Wait for transition to complete before hiding
+            setTimeout(() => {
+                if (!dropdown.classList.contains('show')) {
+                    dropdown.style.display = 'none';
+                }
+            }, 150);
+            selectedHistoryIndex = -1;
+        }
+        
+        function selectHistoryItem(index) {
+            const items = document.querySelectorAll('.url-history-item');
+            items.forEach((item, i) => {
+                if (i === index) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+            selectedHistoryIndex = index;
+        }
+        
+        // Setup input event handlers
+        const urlInput = document.getElementById('dashboard-url');
+        
+        urlInput.addEventListener('focus', () => {
+            showUrlHistoryDropdown();
+        });
+        
+        urlInput.addEventListener('blur', (e) => {
+            // Delay to allow click events on dropdown items
+            setTimeout(() => {
+                hideUrlHistoryDropdown();
+            }, 200);
+        });
+        
+        urlInput.addEventListener('keydown', (e) => {
+            const dropdown = document.getElementById('url-history-dropdown');
+            const items = document.querySelectorAll('.url-history-item');
+            const history = getUrlHistory();
+            
+            if (dropdown.classList.contains('show') && history.length > 0) {
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    selectedHistoryIndex = Math.min(selectedHistoryIndex + 1, history.length - 1);
+                    selectHistoryItem(selectedHistoryIndex);
+                    if (selectedHistoryIndex >= 0) {
+                        urlInput.value = history[selectedHistoryIndex];
+                    }
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    selectedHistoryIndex = Math.max(selectedHistoryIndex - 1, -1);
+                    selectHistoryItem(selectedHistoryIndex);
+                    if (selectedHistoryIndex >= 0) {
+                        urlInput.value = history[selectedHistoryIndex];
+                    }
+                } else if (e.key === 'Escape') {
+                    hideUrlHistoryDropdown();
+                }
+            }
+        });
+        
         // Debug console setup
         const debugLog = document.getElementById('debug-log');
         const debugConsole = document.getElementById('debug-console');
@@ -1304,26 +1528,38 @@
             let html = '';
             if (lang.startsWith('ja')) {
                 html = `
-                <div style="margin-bottom:16px; padding:12px; background:var(--vscode-input-background,#333); border-radius:4px; border:1px solid var(--vscode-panel-border,#3c3c3c);">
-                    <b>これはデモ表示です</b><br>
-                    この画面はサンプルのダッシュボードです。<br>
-                    実際には「URL入力欄」に <b>ローカルで起動したWebサービス</b> や <b>本番環境のURL</b> を入力してご利用ください。<br>
-                    <br>
-                    <b>ファイルURLの例:</b><br>
-                    <code>file:///Users/yourname/projects/report.html</code><br>
-                    <span style="font-size:12px; color:#aaa;">（絶対パスで指定。Macの場合は「file:///」+フルパス）</span>
+                <div style="margin-bottom:16px;">
+                    <details>
+                        <summary style="cursor: pointer; padding: 8px 12px; background: var(--vscode-input-background,#333); border-radius: 4px; border: 1px solid var(--vscode-panel-border,#3c3c3c); user-select: none;">
+                            <b>ℹ️ これはデモ表示です</b> <br/><span style="font-size: 12px; color: #aaa;">（クリックで展開）</span>
+                        </summary>
+                        <div style="margin-top: 8px; padding: 12px; background: var(--vscode-input-background,#333); border-radius: 4px; border: 1px solid var(--vscode-panel-border,#3c3c3c);">
+                            この画面はサンプルのダッシュボードです。<br>
+                            実際には「URL入力欄」に <b>ローカルで起動したWebサービス</b> や <b>本番環境のURL</b> を入力してご利用ください。<br>
+                            <br>
+                            <b>ファイルURLの例:</b><br>
+                            <code>file:///Users/yourname/projects/report.html</code><br>
+                            <span style="font-size:12px; color:#aaa;">（絶対パスで指定。Macの場合は「file:///」+フルパス）</span>
+                        </div>
+                    </details>
                 </div>
                 `;
             } else {
                 html = `
-                <div style="margin-bottom:16px; padding:12px; background:var(--vscode-input-background,#333); border-radius:4px; border:1px solid var(--vscode-panel-border,#3c3c3c);">
-                    <b>This is a demo dashboard</b><br>
-                    This screen is a sample dashboard.<br>
-                    For actual use, please enter the <b>local web service URL</b> or <b>production URL</b> in the URL input field.<br>
-                    <br>
-                    <b>File URL example:</b><br>
-                    <code>file:///Users/yourname/projects/report.html</code><br>
-                    <span style="font-size:12px; color:#aaa;">(Specify absolute path. On Mac, use "file:///" + full path)</span>
+                <div style="margin-bottom:16px;">
+                    <details>
+                        <summary style="cursor: pointer; padding: 8px 12px; background: var(--vscode-input-background,#333); border-radius: 4px; border: 1px solid var(--vscode-panel-border,#3c3c3c); user-select: none;">
+                            <b>ℹ️ This is a demo dashboard</b> <span style="font-size: 12px; color: #aaa;">(Click to expand)</span>
+                        </summary>
+                        <div style="margin-top: 8px; padding: 12px; background: var(--vscode-input-background,#333); border-radius: 4px; border: 1px solid var(--vscode-panel-border,#3c3c3c);">
+                            This screen is a sample dashboard.<br>
+                            For actual use, please enter the <b>local web service URL</b> or <b>production URL</b> in the URL input field.<br>
+                            <br>
+                            <b>File URL example:</b><br>
+                            <code>file:///Users/yourname/projects/report.html</code><br>
+                            <span style="font-size:12px; color:#aaa;">(Specify absolute path. On Mac, use "file:///" + full path)</span>
+                        </div>
+                    </details>
                 </div>
                 `;
             }
@@ -1456,6 +1692,9 @@
         // Initial state check
         // console.log('=== Initial State Check ===');
         // testShowElements();
+        
+        // Initialize URL history
+        updateUrlHistoryDatalist();
         
         // Restore previous URL
         const state = vscode.getState();
@@ -2136,14 +2375,18 @@
             console.log('  - starts with https://', url.startsWith('https://'));
             console.log('  - starts with file://', url.startsWith('file://'));
 
-            // Save URL
-            vscode.setState({ dashboardUrl: url });
-
             if (!url) {
                 console.log('No URL provided, showing default dashboard');
                 showDefaultDashboard();
                 return;
             }
+
+            // Add to history before processing
+            addToUrlHistory(url);
+            
+            // Save URL and history
+            const currentState = vscode.getState() || {};
+            vscode.setState({ ...currentState, dashboardUrl: url });
 
             // Add protocol if URL doesn't have one
             if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('file://')) {
@@ -2197,9 +2440,9 @@
         }
         
         // Load on Enter key
-        const urlInput = document.getElementById('dashboard-url');
-        if (urlInput) {
-            urlInput.addEventListener('keydown', function(e) {
+        const urlInputEnter = document.getElementById('dashboard-url');
+        if (urlInputEnter) {
+            urlInputEnter.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' || e.keyCode === 13) {
                     e.preventDefault();
                     loadDashboard();

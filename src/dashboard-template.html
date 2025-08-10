@@ -699,6 +699,97 @@
         body.theme-vegas .metric-value { color: white; }
         
         
+        /* ダイナーテーマ - 50年代アメリカンダイナー */
+        body.theme-diner {
+            --theme-bg: #f0f0f0;
+            --theme-fg: #222222;
+            --theme-accent: #ff1744;
+            --theme-panel: #ffffff;
+            font-family: 'Arial Black', 'Helvetica', sans-serif;
+            background-image: 
+                linear-gradient(45deg, #cccccc 25%, transparent 25%),
+                linear-gradient(-45deg, #cccccc 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #cccccc 75%),
+                linear-gradient(-45deg, transparent 75%, #cccccc 75%);
+            background-size: 40px 40px;
+            background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
+        }
+        body.theme-diner .service-item {
+            background-color: var(--theme-panel);
+            border: 4px solid #ff1744;
+            box-shadow: 5px 5px 0 #000000;
+            color: var(--theme-fg);
+            position: relative;
+            border-radius: 10px;
+            transform: rotate(-1deg);
+            transition: transform 0.2s;
+        }
+        body.theme-diner .service-item:nth-child(even) {
+            transform: rotate(1deg);
+        }
+        body.theme-diner .service-item:hover {
+            transform: rotate(0deg) scale(1.05);
+        }
+        body.theme-diner .service-item::before {
+            content: '🍔';
+            position: absolute;
+            top: -25px;
+            right: 20px;
+            font-size: 30px;
+            transform: rotate(15deg);
+        }
+        body.theme-diner .service-item:nth-child(2)::before { content: '🍟'; }
+        body.theme-diner .service-item:nth-child(3)::before { content: '🥤'; }
+        body.theme-diner .service-item:nth-child(4)::before { content: '🍕'; }
+        body.theme-diner .service-name {
+            background-color: #40E0D0;
+            color: #ff1744;
+            font-weight: 900;
+            font-size: 18px;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 0 #000000;
+            letter-spacing: 1px;
+            padding: 4px 12px;
+            margin: -4px -12px 4px -12px;
+            border-radius: 6px 6px 0 0;
+        }
+        body.theme-diner .service-description {
+            color: #444444;
+            font-weight: bold;
+            font-style: italic;
+        }
+        body.theme-diner .status-dot {
+            width: 12px;
+            height: 12px;
+            border: 2px solid #000000;
+        }
+        body.theme-diner .status-dot.status-active { 
+            background-color: #00e676;
+            box-shadow: 0 0 10px #00e676;
+        }
+        body.theme-diner .status-dot.status-warning { 
+            background-color: #ffea00;
+            box-shadow: 0 0 10px #ffea00;
+        }
+        body.theme-diner .metric {
+            background: linear-gradient(135deg, #ff1744 0%, #ff5252 100%);
+            border: 3px solid #000000;
+            color: white;
+            border-radius: 20px;
+            font-weight: bold;
+            box-shadow: 2px 2px 0 #000000;
+        }
+        body.theme-diner .metric-label {
+            color: white;
+            text-transform: uppercase;
+            font-size: 10px;
+        }
+        body.theme-diner .metric-value {
+            color: white;
+            font-size: 16px;
+            text-shadow: 1px 1px 0 #000000;
+        }
+        
         /* ウェスタンテーマ - 西部開拓風 */
         body.theme-western {
             --theme-bg: #d4a574;
@@ -1200,6 +1291,7 @@
                 <button class="theme-btn" data-theme="toy">トイ</button>
                 <button class="theme-btn" data-theme="neon">ネオン</button>
                 <button class="theme-btn" data-theme="vegas">ベガス</button>
+                <button class="theme-btn" data-theme="diner">ダイナー</button>
                 <button class="theme-btn" data-theme="western">ウェスタン</button>
                 <button class="theme-btn" data-theme="cyber">サイバー</button>
                 <button class="theme-btn" data-theme="pastel">パステル</button>
@@ -1306,7 +1398,7 @@
         // テーマ切り替え
         document.querySelectorAll('.theme-btn').forEach(btn => {
             btn.addEventListener('click', function() {
-                document.body.classList.remove('theme-simple', 'theme-retro', 'theme-vintage', 'theme-botanical', 'theme-toy', 'theme-neon', 'theme-vegas', 'theme-western', 'theme-cyber', 'theme-pastel', 'theme-dark', 'theme-legacy');
+                document.body.classList.remove('theme-simple', 'theme-retro', 'theme-vintage', 'theme-botanical', 'theme-toy', 'theme-neon', 'theme-vegas', 'theme-diner', 'theme-western', 'theme-cyber', 'theme-pastel', 'theme-dark', 'theme-legacy');
                 document.body.classList.add('theme-' + btn.dataset.theme);
                 // Remove active class from all buttons
                 document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));

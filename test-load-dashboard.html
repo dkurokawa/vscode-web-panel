@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Test Dashboard Loading</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #ccc;
+        }
+        #loading { color: yellow; }
+        #error-message { color: red; display: none; }
+        #dashboard-iframe { 
+            width: 100%; 
+            height: 500px; 
+            border: 1px solid #666;
+            display: none;
+            background: white;
+        }
+        #default-dashboard { 
+            padding: 20px; 
+            background: #2d2d2d;
+            display: none;
+        }
+        input { 
+            padding: 10px; 
+            width: 300px;
+            margin-right: 10px;
+        }
+        button { 
+            padding: 10px 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Dashboard Loading</h1>
+    
+    <div>
+        <input type="text" id="dashboard-url" value="http://localhost:9443" />
+        <button onclick="loadDashboard()">Load</button>
+    </div>
+    
+    <div id="loading" style="display: none;">Loading...</div>
+    <div id="error-message"></div>
+    <div id="default-dashboard">Default dashboard content</div>
+    <iframe id="dashboard-iframe"></iframe>
+    <div id="fetch-container"></div>
+
+    <script>
+        // Mock VS Code API
+        const vscode = {
+            setState: (state) => console.log('setState:', state),
+            getState: () => null,
+            postMessage: (msg) => console.log('postMessage:', msg)
+        };
+        
+        const config = {
+            sandboxLevel: 'medium'
+        };
+        
+        function getSandboxAttribute(level) {
+            switch(level) {
+                case 'strict':
+                    return 'allow-scripts allow-same-origin';
+                case 'relaxed':
+                    return 'allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-top-navigation';
+                case 'medium':
+                default:
+                    return 'allow-scripts allow-same-origin allow-forms allow-popups';
+            }
+        }
+        
+        function showError(html) {
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.innerHTML = html;
+            errorMessage.style.display = 'block';
+        }
+        
+        function hideError() {
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.style.display = 'none';
+        }
+        
+        // Load HTTP/HTTPS URLs
+        function loadHttpUrl(url) {
+            console.log('loadHttpUrl called with:', url);
+            const loading = document.getElementById('loading');
+            const errorMessage = document.getElementById('error-message');
+            const defaultDashboard = document.getElementById('default-dashboard');
+            const iframe = document.getElementById('dashboard-iframe');
+            const fetchContainer = document.getElementById('fetch-container');
+            
+            // Hide all containers
+            defaultDashboard.style.display = 'none';
+            errorMessage.style.display = 'none';
+            fetchContainer.style.display = 'none';
+            iframe.style.display = 'none';
+            
+            // Show loading
+            loading.style.display = 'block';
+            loading.textContent = 'Loading: ' + url;
+            
+            // Set sandbox
+            iframe.setAttribute('sandbox', getSandboxAttribute(config.sandboxLevel));
+            
+            // Set up event handlers
+            iframe.onload = () => {
+                console.log('HTTP iframe loaded successfully');
+                loading.style.display = 'none';
+                iframe.style.display = 'block';
+            };
+            
+            iframe.onerror = () => {
+                console.error('HTTP iframe error');
+                loading.style.display = 'none';
+                showError('<div style="text-align: center;"><h3>Failed to load URL</h3><p>' + url + '</p></div>');
+            };
+            
+            // Set the source
+            console.log('Setting iframe src to:', url);
+            iframe.src = url;
+        }
+        
+        function loadDashboard() {
+            let url = document.getElementById('dashboard-url').value.trim();
+            console.log('loadDashboard called with URL:', url);
+
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
+
+            // Add protocol if missing
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+                document.getElementById('dashboard-url').value = url;
+            }
+
+            loadHttpUrl(url);
+        }
+        
+        // Auto-load on page load
+        window.onload = () => {
+            console.log('Page loaded, ready to test');
+        };
+    </script>
+</body>
+</html>

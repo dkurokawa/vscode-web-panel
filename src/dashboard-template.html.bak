@@ -80,8 +80,6 @@
             overflow: hidden;
             background-color: var(--vscode-editor-background, #1e1e1e);
             position: relative;
-            display: flex;
-            flex-direction: column;
         }
         
         .iframe-container {
@@ -103,6 +101,9 @@
         .default-dashboard {
             width: 100%;
             height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
             display: block;
             overflow-y: auto;
             padding: 12px;
@@ -1064,10 +1065,6 @@
                    id="dashboard-url" 
                    class="url-input" 
                    placeholder="https://example.com/dashboard">
-            <button onclick="showDebug()" style="margin-left: 5px; padding: 4px 8px; cursor: pointer;" title="Show debug console">🐛</button>
-            <button onclick="loadDashboard()" style="margin-left: 5px; padding: 4px 8px; cursor: pointer;" title="Load URL">Go</button>
-            <button onclick="minimalTest()" style="margin-left: 5px; padding: 4px 8px; cursor: pointer; background: #f44;" title="Test iframe">Test</button>
-            <button onclick="loadHttpUrl('http://localhost:9443')" style="margin-left: 5px; padding: 4px 8px; cursor: pointer;" title="Load localhost">9443</button>
         </div>
     </div>
     
@@ -1079,17 +1076,10 @@
         <div class="error-message" id="error-message" style="display: none;">
             Failed to load dashboard
         </div>
-        <!-- Debug console -->
-        <div id="debug-console" style="position: fixed; bottom: 0; left: 0; right: 0; height: 200px; background: rgba(0,0,0,0.9); color: #0f0; font-family: monospace; font-size: 11px; padding: 10px; overflow-y: auto; display: none; z-index: 9999;">
-            <div style="margin-bottom: 5px;">
-                <button onclick="document.getElementById('debug-console').style.display='none'" style="float: right;">Close</button>
-                <strong>Debug Console</strong>
-            </div>
-            <div id="debug-log"></div>
-        </div>
         <!-- HTML embed container -->
         <iframe id="dashboard-iframe" 
-                style="width:100%;height:100%;border:none;display:none;flex:1;"
+                style="width:100%;height:100%;border:none;display:none;"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-top-navigation allow-popups-to-escape-sandbox allow-presentation allow-downloads"
                 frameborder="0">
         </iframe>
         <!-- Fetch mode container -->
@@ -1226,39 +1216,6 @@
         // Send message via VSCode API
         const vscode = acquireVsCodeApi();
         
-        // Debug console setup
-        const debugLog = document.getElementById('debug-log');
-        const debugConsole = document.getElementById('debug-console');
-        const originalConsoleLog = console.log;
-        const originalConsoleError = console.error;
-        
-        // Override console methods to show in debug panel
-        console.log = function(...args) {
-            originalConsoleLog.apply(console, args);
-            const msg = new Date().toISOString().substr(11, 8) + ' [LOG] ' + 
-                args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' ');
-            if (debugLog) {
-                debugLog.innerHTML += msg + '\n';
-                debugLog.scrollTop = debugLog.scrollHeight;
-            }
-        };
-        
-        console.error = function(...args) {
-            originalConsoleError.apply(console, args);
-            const msg = new Date().toISOString().substr(11, 8) + ' [ERR] ' + 
-                args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' ');
-            if (debugLog) {
-                debugLog.innerHTML += '<span style="color:#f44">' + msg + '</span>\n';
-                debugLog.scrollTop = debugLog.scrollHeight;
-            }
-        };
-        
-        // Show debug console
-        window.showDebug = function() {
-            debugConsole.style.display = 'block';
-            console.log('Debug console opened');
-        };
-        
         // Track when error was last shown to ensure minimum display time
         let errorShownAt = 0;
         const MIN_ERROR_DISPLAY_TIME = 2000; // Minimum time to display error messages (2 seconds)
@@ -1362,92 +1319,12 @@
             }
         }
         
-        // Add minimal test function
-        window.minimalTest = function() {
-            console.log('=== MINIMAL TEST ===');
-            const iframe = document.getElementById('dashboard-iframe');
-            console.log('iframe element:', iframe);
-            console.log('Current display:', iframe.style.display);
-            
-            // Hide all other elements
-            document.getElementById('default-dashboard').style.display = 'none';
-            document.getElementById('dashboard-annotation').style.display = 'none';
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('error-message').style.display = 'none';
-            
-            // Force show iframe
-            iframe.style.display = 'block';
-            iframe.style.position = 'absolute';
-            iframe.style.top = '0';
-            iframe.style.left = '0';
-            iframe.style.width = '100%';
-            iframe.style.height = '100%';
-            iframe.style.border = '3px solid red';
-            iframe.style.zIndex = '9999';
-            iframe.style.backgroundColor = 'white';
-            
-            // Try to load a simple URL
-            const testUrl = 'https://example.com';
-            console.log('Setting src to:', testUrl);
-            iframe.src = testUrl;
-            
-            console.log('iframe after setting src:', {
-                src: iframe.src,
-                display: iframe.style.display,
-                width: iframe.style.width,
-                height: iframe.style.height,
-                position: iframe.style.position,
-                zIndex: iframe.style.zIndex
-            });
-        };
-        
-        // Test with different URLs
-        window.testUrls = function() {
-            const urls = [
-                'https://example.com',
-                'https://www.wikipedia.org',
-                'http://localhost:9443',
-                'data:text/html,<h1>Hello World</h1>'
-            ];
-            
-            let index = 0;
-            function testNext() {
-                if (index >= urls.length) {
-                    console.log('All URLs tested');
-                    return;
-                }
-                
-                const url = urls[index];
-                console.log(`\n=== Testing URL ${index + 1}/${urls.length}: ${url} ===`);
-                loadHttpUrl(url);
-                
-                index++;
-                setTimeout(testNext, 5000);
-            }
-            
-            testNext();
-        };
-        
-        // Auto-show debug console for testing
-        showDebug();
-        console.log('=== Web Panel Started ===');
-        console.log('Debug console auto-opened');
-        console.log('Available test functions:');
-        console.log('  - testShowElements()');
-        console.log('  - minimalTest()');
-        console.log('  - testUrls() - Test multiple URLs');
-        console.log('  - loadHttpUrl("http://localhost:9443")');
-        console.log('  - loadDashboard()');
-        
         // Restore previous URL
         const state = vscode.getState();
         if (state && state.dashboardUrl) {
             document.getElementById('dashboard-url').value = state.dashboardUrl;
             if (state.dashboardUrl.trim()) {
-                // Don't auto-load for now, for debugging
-                console.log('Previous URL found:', state.dashboardUrl);
-                console.log('NOT auto-loading. Call loadDashboard() manually.');
-                showDefaultDashboard();
+                loadDashboard();
             } else {
                 showDefaultDashboard();
             }
@@ -1481,57 +1358,9 @@
             }
         }
         
-        // Test functions for debugging
-        function testShowElements() {
-            console.log('=== Testing Element Visibility ===');
-            const elements = ['loading', 'error-message', 'default-dashboard', 'dashboard-iframe', 'fetch-container'];
-            elements.forEach(id => {
-                const el = document.getElementById(id);
-                console.log(`${id}: exists=${!!el}, display=${el?.style.display}, visible=${el?.offsetParent !== null}`);
-            });
-        }
-        
-        function testIframeLoad(url) {
-            console.log('=== Testing iframe load directly ===');
-            const iframe = document.getElementById('dashboard-iframe');
-            console.log('iframe element:', iframe);
-            
-            // Reset everything
-            const allElements = ['loading', 'error-message', 'default-dashboard', 'dashboard-iframe', 'fetch-container'];
-            allElements.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.style.display = 'none';
-            });
-            
-            // Show only iframe
-            iframe.style.display = 'block';
-            console.log('Setting iframe src to:', url);
-            iframe.src = url;
-            
-            // Add listeners
-            iframe.onload = () => {
-                console.log('✅ iframe.onload fired!');
-                testShowElements();
-            };
-            
-            iframe.onerror = () => {
-                console.log('❌ iframe.onerror fired!');
-                testShowElements();
-            };
-            
-            // Also check after timeout
-            setTimeout(() => {
-                console.log('=== After 3 seconds ===');
-                console.log('iframe.src:', iframe.src);
-                testShowElements();
-            }, 3000);
-        }
-        
         // Load HTTP/HTTPS URLs
         function loadHttpUrl(url) {
-            console.log('🚀 loadHttpUrl called with:', url);
-            testShowElements(); // Show initial state
-            
+            console.log('loadHttpUrl called with:', url);
             const loading = document.getElementById('loading');
             const errorMessage = document.getElementById('error-message');
             const defaultDashboard = document.getElementById('default-dashboard');
@@ -1539,18 +1368,12 @@
             const fetchContainer = document.getElementById('fetch-container');
             
             // Hide all containers
-            console.log('Hiding all containers...');
             defaultDashboard.style.display = 'none';
             errorMessage.style.display = 'none';
             fetchContainer.style.display = 'none';
             iframe.style.display = 'none';
             
-            // Also hide the annotation which takes up space
-            const annotation = document.getElementById('dashboard-annotation');
-            if (annotation) annotation.style.display = 'none';
-            
             // Show loading
-            console.log('Showing loading...');
             loading.style.display = 'block';
             loading.textContent = `Loading: ${url}`;
             
@@ -1558,205 +1381,69 @@
             console.log('Setting up iframe for HTTP URL');
             
             // Set sandbox
-            const sandboxValue = getSandboxAttribute(config.sandboxLevel);
-            console.log('Setting sandbox to:', sandboxValue);
-            iframe.setAttribute('sandbox', sandboxValue);
+            iframe.setAttribute('sandbox', getSandboxAttribute(config.sandboxLevel));
             
             // Set up event handlers
             iframe.onload = () => {
-                console.log('✅ HTTP iframe.onload fired!');
+                console.log('HTTP iframe loaded successfully');
                 loading.style.display = 'none';
-                
-                // Hide annotation if still visible
-                const annotation = document.getElementById('dashboard-annotation');
-                if (annotation) annotation.style.display = 'none';
-                
-                // Set iframe to fill container
                 iframe.style.display = 'block';
-                iframe.style.position = 'absolute';
-                iframe.style.top = '0';
-                iframe.style.left = '0';
-                iframe.style.width = '100%';
-                iframe.style.height = '100%';
-                iframe.style.border = 'none';
-                
-                console.log('iframe styles set:', {
-                    display: iframe.style.display,
-                    position: iframe.style.position,
-                    width: iframe.style.width,
-                    height: iframe.style.height
-                });
-                
-                // Force layout recalculation
-                iframe.offsetHeight; // Force reflow
-                
-                // Check computed styles
-                const computed = window.getComputedStyle(iframe);
-                console.log('Computed styles:', {
-                    display: computed.display,
-                    width: computed.width,
-                    height: computed.height,
-                    position: computed.position,
-                    visibility: computed.visibility,
-                    opacity: computed.opacity
-                });
-                
-                // Check parent container
-                const container = iframe.parentElement;
-                const containerComputed = window.getComputedStyle(container);
-                console.log('Parent container styles:', {
-                    display: containerComputed.display,
-                    width: containerComputed.width,
-                    height: containerComputed.height,
-                    overflow: containerComputed.overflow,
-                    position: containerComputed.position
-                });
-                
-                testShowElements();
             };
             
             iframe.onerror = () => {
-                console.log('❌ HTTP iframe.onerror fired!');
+                console.error('HTTP iframe error');
                 loading.style.display = 'none';
                 showError('<div style="text-align: center;"><h3>Failed to load URL</h3><p>' + url + '</p></div>');
-                testShowElements();
             };
-            
-            // Check if it's localhost with HTTPS
-            if (url.startsWith('https://localhost')) {
-                console.warn('⚠️ Warning: Using HTTPS with localhost may fail due to self-signed certificate');
-                console.log('💡 Try using HTTP instead: ' + url.replace('https://', 'http://'));
-            }
             
             // Set the source
             console.log('Setting iframe src to:', url);
             iframe.src = url;
-            
-            // Debug: Check after a delay
-            setTimeout(() => {
-                console.log('=== After 2 seconds ===');
-                testShowElements();
-                
-                // Check if iframe loaded but appears blank
-                if (url.startsWith('https://localhost')) {
-                    try {
-                        // Try to access iframe content (will fail for cross-origin)
-                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                        console.log('iframe document accessible');
-                    } catch (e) {
-                        console.error('❌ Cannot access iframe content - likely HTTPS certificate issue');
-                        console.log('💡 Solution: Use HTTP instead of HTTPS for localhost');
-                        
-                        // Show error message
-                        showError(`
-                            <div style="text-align: center; padding: 20px;">
-                                <h3 style="color: #e74c3c;">HTTPS Certificate Issue</h3>
-                                <p>Cannot display <strong>${url}</strong></p>
-                                <p>Self-signed certificates are blocked in iframes for security reasons.</p>
-                                <br>
-                                <p><strong>Solution:</strong> Use HTTP instead:</p>
-                                <code style="background: #333; padding: 10px; display: inline-block; margin: 10px;">
-                                    ${url.replace('https://', 'http://')}
-                                </code>
-                                <br><br>
-                                <button onclick="loadHttpUrl('${url.replace('https://', 'http://')}')" 
-                                        style="padding: 10px 20px; background: #0e639c; color: white; border: none; cursor: pointer;">
-                                    Load with HTTP
-                                </button>
-                            </div>
-                        `);
-                    }
-                }
-            }, 2000);
         }
-        
-        // Make test functions global for console access
-        window.testShowElements = testShowElements;
-        window.testIframeLoad = testIframeLoad;
-        window.loadHttpUrl = loadHttpUrl;
         
         // Load file:// URLs
         function loadFileUrl(url) {
-            console.log('📁 loadFileUrl called with:', url);
-            testShowElements(); // Show initial state
-            
+            console.log('loadFileUrl called with:', url);
             const loading = document.getElementById('loading');
-            const errorMessage = document.getElementById('error-message');
-            const defaultDashboard = document.getElementById('default-dashboard');
-            const iframe = document.getElementById('dashboard-iframe');
-            const fetchContainer = document.getElementById('fetch-container');
-            
-            // Hide all containers
-            console.log('Hiding all containers...');
-            defaultDashboard.style.display = 'none';
-            errorMessage.style.display = 'none';
-            fetchContainer.style.display = 'none';
-            iframe.style.display = 'none';
             
             // Show loading
-            console.log('Showing loading...');
             loading.style.display = 'block';
             loading.textContent = `Loading local file...`;
             
             // Request conversion from extension
-            console.log('Requesting file URL conversion from extension...');
+            console.log('Requesting file URL conversion');
             vscode.postMessage({ type: 'resolveFileUrl', fileUrl: url });
-            
-            // Debug: Check after a delay
-            setTimeout(() => {
-                console.log('=== After 2 seconds (file URL) ===');
-                testShowElements();
-            }, 2000);
         }
-        
-        window.loadFileUrl = loadFileUrl;
 
         function loadDashboard() {
             let url = document.getElementById('dashboard-url').value.trim();
-            console.log('🎯 loadDashboard called with URL:', url);
-            console.log('URL type check:');
-            console.log('  - starts with http://', url.startsWith('http://'));
-            console.log('  - starts with https://', url.startsWith('https://'));
-            console.log('  - starts with file://', url.startsWith('file://'));
+            console.log('loadDashboard called with URL:', url);
 
             // Save URL
             vscode.setState({ dashboardUrl: url });
 
             if (!url) {
-                console.log('No URL provided, showing default dashboard');
                 showDefaultDashboard();
                 return;
             }
 
-            // Add protocol if URL doesn't have one
+            // Add https if URL doesn't have protocol (but allow file://)
             if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('file://')) {
-                // For localhost, default to HTTP (not HTTPS)
-                if (url.startsWith('localhost')) {
-                    console.log('Adding http:// prefix to localhost URL');
-                    url = 'http://' + url;
-                } else {
-                    console.log('Adding https:// prefix to URL');
-                    url = 'https://' + url;
-                }
+                url = 'https://' + url;
                 document.getElementById('dashboard-url').value = url;
                 vscode.setState({ dashboardUrl: url });
             }
 
             // Route to appropriate handler
-            console.log('Routing URL:', url);
             if (url.startsWith('file://')) {
-                console.log('→ Calling loadFileUrl()');
                 loadFileUrl(url);
             } else if (url.startsWith('http://') || url.startsWith('https://')) {
-                console.log('→ Calling loadHttpUrl()');
                 loadHttpUrl(url);
             } else {
                 console.error('Unknown URL protocol');
                 showError('<div style="text-align: center;"><h3>Invalid URL</h3><p>URL must start with http://, https://, or file://</p></div>');
             }
         }
-        
-        window.loadDashboard = loadDashboard;
         
         function showDefaultDashboard() {
             const loading = document.getElementById('loading');
@@ -1772,6 +1459,220 @@
             iframe.style.display = 'none';
             fetchContainer.style.display = 'none';
             
+            // Start updating default dashboard metrics
+            updateMetrics();
+            if (!window.metricsInterval) {
+                window.metricsInterval = setInterval(updateMetrics, 3000);
+            }
+        }
+                        loading.style.display = 'none';
+                        fetchContainer.style.display = 'block';
+                        
+                        // Extract body content
+                        let bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+                        fetchContainer.innerHTML = bodyMatch ? bodyMatch[1] : html;
+                        
+                        // If navigation is disabled, block all links and forms
+                        if (!config.navigationEnabled) {
+                            blockNavigation(fetchContainer);
+                        }
+                    })
+                    .catch(err => {
+                        loading.style.display = 'none';
+                        
+                        let errorHtml = `<div style="text-align: center; padding: 20px;">
+                            <h3 style="color: #e74c3c; margin-bottom: 10px;">Failed to Load Dashboard</h3>
+                            <p style="margin-bottom: 15px;"><b>URL:</b> ${url}</p>`;
+                        
+                        if (err.status) {
+                            errorHtml += `<div style="background: #f8f9fa; border-left: 4px solid #e74c3c; padding: 15px; margin: 20px 0; text-align: left;">
+                                <strong>Error Code:</strong> ${err.message}<br>`;
+                            
+                            // Add specific suggestions based on status code
+                            if (err.status === 404) {
+                                errorHtml += '<br><strong>Suggestion:</strong> Check if the URL is correct and the page exists.';
+                            } else if (err.status === 401 || err.status === 403) {
+                                errorHtml += '<br><strong>Suggestion:</strong> You may need to log in or don\'t have permission to access this page.';
+                            } else if (err.status >= 500) {
+                                errorHtml += '<br><strong>Suggestion:</strong> The server is having issues. Try again later.';
+                            }
+                            
+                            errorHtml += '</div>';
+                        } else {
+                            errorHtml += `<div style="background: #f8f9fa; border-left: 4px solid #e74c3c; padding: 15px; margin: 20px 0; text-align: left;">
+                                <strong>Error:</strong> ${err.message}<br>
+                                <br><strong>Note:</strong> Some sites block cross-origin requests. You may need to:
+                                <ul style="margin-top: 10px;">
+                                    <li>Check if the site allows embedding</li>
+                                    <li>Use a proxy or CORS-enabled endpoint</li>
+                                    <li>Access the site directly in your browser</li>
+                                </ul>
+                            </div>`;
+                        }
+                        
+                        errorHtml += '</div>';
+                        showError(errorHtml);
+                    });
+            } else {
+                // Iframe mode - secure default
+                console.log('Using iframe mode for URL:', url);
+                
+                // Update sandbox based on settings
+                iframe.setAttribute('sandbox', getSandboxAttribute(config.sandboxLevel));
+                
+                // Disable navigation if needed
+                if (!config.navigationEnabled && config.sandboxLevel === 'relaxed') {
+                    const currentSandbox = iframe.getAttribute('sandbox');
+                    iframe.setAttribute('sandbox', currentSandbox.replace('allow-top-navigation', ''));
+                }
+                
+                // For iframe mode, we'll do a pre-flight check with fetch to detect errors
+                // This helps us show proper error messages for 404s and other HTTP errors
+                fetch(url, { method: 'HEAD', mode: 'no-cors' })
+                    .then(() => {
+                        // URL is reachable, proceed with iframe loading
+                        console.log('URL pre-check passed, loading in iframe');
+                    })
+                    .catch(() => {
+                        // Pre-flight failed, but we'll still try to load in iframe
+                        // as no-cors requests don't give us status information
+                        console.log('URL pre-check failed, but will still attempt iframe load');
+                    });
+                
+                iframe.onerror = () => {
+                    console.error('iframe.onerror triggered for URL:', url);
+                    loading.style.display = 'none';
+                    const errorHtml = `<div style="text-align: center; padding: 20px;">
+                        <h3 style="color: #e74c3c; margin-bottom: 10px;">Failed to Load Dashboard in iframe</h3>
+                        <p style="margin-bottom: 15px;"><b>URL:</b> ${url}</p>
+                        <div style="background: #f8f9fa; border-left: 4px solid #e74c3c; padding: 15px; margin: 20px 0; text-align: left;">
+                            <strong>Common Causes:</strong>
+                            <ul style="margin-top: 10px;">
+                                <li>The site blocks iframe embedding (X-Frame-Options header)</li>
+                                <li>Content Security Policy restrictions</li>
+                                <li>The URL doesn't exist (404 error)</li>
+                                <li>Network connection issues</li>
+                            </ul>
+                            <br>
+                            <strong>Solutions:</strong>
+                            <ol style="margin-top: 10px;">
+                                <li>Try switching to <strong>'fetch' mode</strong> in VS Code settings<br>
+                                    <code>web-panel.renderMode: "fetch"</code></li>
+                                <li>Check if the URL is correct and accessible in your browser</li>
+                                <li>For local development servers, ensure they're running</li>
+                                <li>Some sites (like GitHub, Google) intentionally block iframe embedding</li>
+                            </ol>
+                        </div>
+                        <p style="margin-top: 15px; font-size: 0.9em; color: #666;">
+                            <strong>Note:</strong> iframe mode cannot detect specific HTTP error codes due to browser security restrictions.
+                            Use fetch mode for detailed error information.
+                        </p>
+                    </div>`;
+                    showError(errorHtml);
+                };
+                
+                // Track if iframe actually loaded content
+                let iframeLoaded = false;
+                
+                iframe.onload = () => {
+                    console.log('iframe.onload triggered for URL:', url, 'actual src:', iframe.src);
+                    if (iframeTimeout) {
+                        clearTimeout(iframeTimeout);
+                    }
+                    iframeLoaded = true;
+                    
+                    // Check if iframe actually has content
+                    // For cross-origin, we can't check content, but we can assume it loaded
+                    try {
+                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                        if (iframeDoc && iframeDoc.body) {
+                            // Same-origin, we can check if there's actual content
+                            const hasContent = iframeDoc.body.innerHTML.trim().length > 0;
+                            if (!hasContent) {
+                                console.warn('iframe loaded but has no content');
+                            }
+                        }
+                    } catch (e) {
+                        // Cross-origin, assume it's OK
+                        console.log('Cross-origin iframe loaded');
+                    }
+                    
+                    loading.style.display = 'none';
+                    iframe.style.display = 'block';
+                    hideError(); // Hide any previous errors
+                    
+                    if (!config.navigationEnabled) {
+                        try {
+                            // Try to block navigation in iframe (only works for same-origin)
+                            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                            if (iframeDoc) {
+                                blockNavigation(iframeDoc.body);
+                            }
+                        } catch (e) {
+                            // Cross-origin - can't access content
+                            console.log('Cannot block navigation in cross-origin iframe');
+                        }
+                    }
+                };
+                
+                // Set a timeout for iframe loading
+                let iframeTimeout = setTimeout(() => {
+                    if (!iframeLoaded) {
+                        console.log('iframe timeout triggered - no load event received');
+                        loading.style.display = 'none';
+                        iframe.style.display = 'none';
+                        const errorHtml = `<div style="text-align: center; padding: 20px;">
+                            <h3 style="color: #e74c3c; margin-bottom: 10px;">Failed to Load Page</h3>
+                            <p style="margin-bottom: 15px;"><b>URL:</b> ${url}</p>
+                            <div style="background: #f8f9fa; border-left: 4px solid #e74c3c; padding: 15px; margin: 20px 0; text-align: left;">
+                                <strong>The page could not be loaded.</strong><br><br>
+                                Possible reasons:
+                                <ul style="margin-top: 10px;">
+                                    <li>The URL doesn't exist (404 error)</li>
+                                    <li>Network connection error</li>
+                                    <li>The server is down or unreachable</li>
+                                    <li>The page blocks iframe embedding</li>
+                                </ul>
+                                <br>
+                                <strong>Recommended actions:</strong>
+                                <ol style="margin-top: 10px;">
+                                    <li>Verify the URL is correct and accessible in your browser</li>
+                                    <li>Try switching to <strong>'fetch' mode</strong> in VS Code settings<br>
+                                        <code>web-panel.renderMode: "fetch"</code><br>
+                                        (Fetch mode provides better error information)</li>
+                                    <li>Check your internet connection</li>
+                                </ol>
+                            </div>
+                        </div>`;
+                        showError(errorHtml);
+                        iframe.src = ''; // Stop loading
+                    }
+                }, 10000); // 10 second timeout
+                
+                // Set iframe source
+                iframe.src = url;
+            }
+        }
+        
+        function showDefaultDashboard() {
+            const loading = document.getElementById('loading');
+            const errorMessage = document.getElementById('error-message');
+            const defaultDashboard = document.getElementById('default-dashboard');
+            const iframe = document.getElementById('dashboard-iframe');
+            const fetchContainer = document.getElementById('fetch-container');
+            console.log('Showing default dashboard');
+            loading.style.display = 'none';
+            // Don't immediately hide error messages - let them stay visible for a moment
+            if (errorMessage.style.display === 'block') {
+                setTimeout(() => {
+                    errorMessage.style.display = 'none';
+                }, 2000); // Keep error visible for 2 seconds
+            } else {
+                errorMessage.style.display = 'none';
+            }
+            defaultDashboard.style.display = 'block';
+            iframe.style.display = 'none';
+            fetchContainer.style.display = 'none';
             // Start updating default dashboard metrics
             updateMetrics();
             if (!window.metricsInterval) {

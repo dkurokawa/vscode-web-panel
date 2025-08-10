@@ -1,1 +1,2 @@
-
+Debug Console
+06:33:32 [LOG] Debug console opened 06:33:33 [LOG] === Web Panel Started === 06:33:33 [LOG] Debug console auto-opened 06:33:33 [LOG] Available test functions: 06:33:33 [LOG] - testShowElements() 06:33:33 [LOG] - minimalTest() 06:33:33 [LOG] - loadHttpUrl("https://localhost:9443") 06:33:33 [LOG] - loadDashboard() 06:33:33 [LOG] Previous URL found: https://localhost:9443 06:33:33 [LOG] NOT auto-loading. Call loadDashboard() manually. 06:33:33 [LOG] Showing default dashboard

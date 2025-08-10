@@ -48,6 +48,28 @@ class DashboardViewProvider implements vscode.WebviewViewProvider {
 		};
 
 		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+
+		// Webviewからのfile://リクエストを受けて安全なURLに変換して返す
+		webviewView.webview.onDidReceiveMessage(async (msg) => {
+			if (msg && msg.type === 'resolveFileUrl' && msg.fileUrl) {
+				try {
+					// file://パスを抽出（file:// の後のパスを取得）
+					let filePath = msg.fileUrl;
+					if (filePath.startsWith('file://')) {
+						// file:// を除去
+						filePath = filePath.substring(7);
+					}
+					console.log('Converting file path:', filePath);
+					const uri = vscode.Uri.file(filePath);
+					const webviewUri = webviewView.webview.asWebviewUri(uri).toString();
+					console.log('Converted to webview URI:', webviewUri);
+					webviewView.webview.postMessage({ type: 'resolvedFileUrl', webviewUrl: webviewUri });
+				} catch (e) {
+					console.error('Error converting file URL:', e);
+					webviewView.webview.postMessage({ type: 'resolvedFileUrl', webviewUrl: '' });
+				}
+			}
+		});
 	}
 
 	private _getHtmlForWebview(webview: vscode.Webview) {
@@ -153,12 +175,19 @@ class DashboardPanel {
 		webview.onDidReceiveMessage(async (msg) => {
 			if (msg && msg.type === 'resolveFileUrl' && msg.fileUrl) {
 				try {
-					// file://パスを抽出
-					const filePath = msg.fileUrl.replace('file://', '');
+					// file://パスを抽出（file:// の後のパスを取得）
+					let filePath = msg.fileUrl;
+					if (filePath.startsWith('file://')) {
+						// file:// を除去
+						filePath = filePath.substring(7);
+					}
+					console.log('Converting file path:', filePath);
 					const uri = vscode.Uri.file(filePath);
 					const webviewUri = webview.asWebviewUri(uri).toString();
+					console.log('Converted to webview URI:', webviewUri);
 					webview.postMessage({ type: 'resolvedFileUrl', webviewUrl: webviewUri });
 				} catch (e) {
+					console.error('Error converting file URL:', e);
 					webview.postMessage({ type: 'resolvedFileUrl', webviewUrl: '' });
 				}
 			}

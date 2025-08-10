@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Test Dashboard Functions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #ccc;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #666;
+            background: #2d2d2d;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        #loading { 
+            color: yellow; 
+            padding: 10px;
+            display: none;
+        }
+        #error-message { 
+            color: red; 
+            padding: 10px;
+            display: none;
+        }
+        #dashboard-iframe { 
+            width: 100%; 
+            height: 400px; 
+            border: 2px solid #666;
+            display: none;
+            background: white;
+        }
+        #default-dashboard { 
+            padding: 20px; 
+            background: #3d3d3d;
+            display: none;
+        }
+        #fetch-container {
+            padding: 20px;
+            background: #3d3d3d;
+            display: none;
+        }
+        .log {
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dashboard Loading Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <button onclick="testShowElements()">Show Element States</button>
+        <button onclick="testHttps()">Test HTTPS (localhost:9443)</button>
+        <button onclick="testHttp()">Test HTTP (localhost:9443)</button>
+        <button onclick="testFile()">Test File URL</button>
+        <button onclick="clearAll()">Clear All</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Elements</h2>
+        <div id="loading">Loading...</div>
+        <div id="error-message">Error message here</div>
+        <div id="default-dashboard">Default dashboard content</div>
+        <iframe id="dashboard-iframe"></iframe>
+        <div id="fetch-container">Fetch container</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Console Log</h2>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        // Override console.log to show in page
+        const logDiv = document.getElementById('log');
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog(...args);
+            const msg = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            logDiv.innerHTML += msg + '\n';
+            logDiv.scrollTop = logDiv.scrollHeight;
+        };
+
+        // Mock VS Code API
+        const vscode = {
+            setState: (state) => console.log('setState:', state),
+            getState: () => null,
+            postMessage: (msg) => console.log('postMessage:', msg)
+        };
+        
+        const config = {
+            sandboxLevel: 'medium'
+        };
+        
+        function getSandboxAttribute(level) {
+            switch(level) {
+                case 'strict':
+                    return 'allow-scripts allow-same-origin';
+                case 'relaxed':
+                    return 'allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-top-navigation';
+                case 'medium':
+                default:
+                    return 'allow-scripts allow-same-origin allow-forms allow-popups';
+            }
+        }
+        
+        function showError(html) {
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.innerHTML = html;
+            errorMessage.style.display = 'block';
+        }
+        
+        // Test functions
+        function testShowElements() {
+            console.log('=== Testing Element Visibility ===');
+            const elements = ['loading', 'error-message', 'default-dashboard', 'dashboard-iframe', 'fetch-container'];
+            elements.forEach(id => {
+                const el = document.getElementById(id);
+                console.log(`${id}: exists=${!!el}, display=${el?.style.display}, visible=${el?.offsetParent !== null}`);
+            });
+        }
+        
+        function clearAll() {
+            console.log('=== Clearing all elements ===');
+            const elements = ['loading', 'error-message', 'default-dashboard', 'dashboard-iframe', 'fetch-container'];
+            elements.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.style.display = 'none';
+                    if (id === 'dashboard-iframe') {
+                        el.src = '';
+                    }
+                }
+            });
+            logDiv.innerHTML = '';
+        }
+        
+        function testHttps() {
+            console.log('=== Testing HTTPS ===');
+            const url = 'https://localhost:9443';
+            testIframeLoad(url);
+        }
+        
+        function testHttp() {
+            console.log('=== Testing HTTP ===');
+            const url = 'http://localhost:9443';
+            testIframeLoad(url);
+        }
+        
+        function testFile() {
+            console.log('=== Testing File URL ===');
+            const url = 'file:///Users/kurokawadaisuke/projects/ppn-page/mini-panel.html';
+            console.log('Note: File URLs will not work in regular browser due to security restrictions');
+            testIframeLoad(url);
+        }
+        
+        function testIframeLoad(url) {
+            console.log('Testing iframe load with:', url);
+            const iframe = document.getElementById('dashboard-iframe');
+            
+            // Clear everything first
+            clearAll();
+            
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loading').textContent = 'Loading: ' + url;
+            
+            // Setup iframe
+            iframe.style.display = 'block';
+            
+            let loadFired = false;
+            let errorFired = false;
+            
+            iframe.onload = () => {
+                loadFired = true;
+                console.log('✅ iframe.onload fired!');
+                document.getElementById('loading').style.display = 'none';
+                testShowElements();
+            };
+            
+            iframe.onerror = () => {
+                errorFired = true;
+                console.log('❌ iframe.onerror fired!');
+                document.getElementById('loading').style.display = 'none';
+                showError('Failed to load: ' + url);
+                testShowElements();
+            };
+            
+            // Set source
+            console.log('Setting iframe.src =', url);
+            iframe.src = url;
+            
+            // Check after timeout
+            setTimeout(() => {
+                console.log('=== After 3 seconds ===');
+                console.log('Load fired:', loadFired);
+                console.log('Error fired:', errorFired);
+                console.log('iframe.src:', iframe.src);
+                if (!loadFired && !errorFired) {
+                    console.log('⚠️ Neither onload nor onerror fired!');
+                }
+                testShowElements();
+            }, 3000);
+        }
+        
+        // Auto-run a test on load
+        window.onload = () => {
+            console.log('Page loaded. Click buttons to test.');
+            testShowElements();
+        };
+    </script>
+</body>
+</html>

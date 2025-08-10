@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple iframe Test</title>
+    <style>
+        body { 
+            background: #1e1e1e; 
+            color: #ccc; 
+            font-family: Arial; 
+            padding: 20px;
+        }
+        iframe { 
+            width: 100%; 
+            height: 500px; 
+            border: 2px solid #0078d4;
+            background: white;
+        }
+        .status { 
+            margin: 10px 0; 
+            padding: 10px; 
+            background: #2d2d2d;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple iframe Test</h1>
+    
+    <div class="status" id="status">Status: Ready</div>
+    
+    <iframe id="test-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+    
+    <script>
+        const iframe = document.getElementById('test-iframe');
+        const status = document.getElementById('status');
+        
+        // Test URLs
+        const urls = [
+            'https://localhost:9443',
+            'http://localhost:9443',
+            'https://example.com'
+        ];
+        
+        let currentIndex = 0;
+        
+        function testNext() {
+            if (currentIndex >= urls.length) {
+                status.textContent = 'All tests completed';
+                return;
+            }
+            
+            const url = urls[currentIndex];
+            status.textContent = `Testing: ${url}`;
+            
+            iframe.onload = () => {
+                console.log(`✅ Loaded: ${url}`);
+                status.textContent = `✅ Loaded: ${url}`;
+                currentIndex++;
+                setTimeout(testNext, 2000);
+            };
+            
+            iframe.onerror = () => {
+                console.log(`❌ Error: ${url}`);
+                status.textContent = `❌ Error: ${url}`;
+                currentIndex++;
+                setTimeout(testNext, 2000);
+            };
+            
+            console.log(`Setting src: ${url}`);
+            iframe.src = url;
+            
+            // Timeout fallback
+            setTimeout(() => {
+                if (iframe.src === url) {
+                    console.log(`⏱ Timeout: ${url}`);
+                    status.textContent = `⏱ Timeout: ${url}`;
+                    currentIndex++;
+                    testNext();
+                }
+            }, 5000);
+        }
+        
+        // Start tests
+        setTimeout(testNext, 1000);
+    </script>
+</body>
+</html>

@@ -80,8 +80,6 @@
             overflow: hidden;
             background-color: var(--vscode-editor-background, #1e1e1e);
             position: relative;
-            display: flex;
-            flex-direction: column;
         }
         
         .iframe-container {
@@ -1089,7 +1087,7 @@
         </div>
         <!-- HTML embed container -->
         <iframe id="dashboard-iframe" 
-                style="width:100%;height:100%;border:none;display:none;flex:1;"
+                style="width:100%;height:100%;border:none;display:none;position:absolute;top:0;left:0;background-color:white;z-index:10;"
                 frameborder="0">
         </iframe>
         <!-- Fetch mode container -->
@@ -1141,7 +1139,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="service-item" id="annotation-service-item"></div>
+                <div class="service-item" id="dashboard-annotation"></div>
                 <!-- ...既存の他のservice-item... -->
                 
                 <div class="service-item">
@@ -1314,7 +1312,7 @@
                 </div>
                 `;
             }
-            document.getElementById('annotation-service-item').innerHTML = html;
+            document.getElementById('dashboard-annotation').innerHTML = html;
         }
         setDashboardAnnotation();
         
@@ -1355,7 +1353,7 @@
                 case 'strict':
                     return 'allow-scripts allow-same-origin';
                 case 'relaxed':
-                    return 'allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-top-navigation';
+                    return 'allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-top-navigation allow-downloads';
                 case 'medium':
                 default:
                     return 'allow-scripts allow-same-origin allow-forms allow-popups';
@@ -1437,7 +1435,12 @@
         console.log('  - minimalTest()');
         console.log('  - testUrls() - Test multiple URLs');
         console.log('  - loadHttpUrl("http://localhost:9443")');
+        console.log('  - loadFileUrl("file:///path/to/file.html")');
         console.log('  - loadDashboard()');
+        
+        // Initial state check
+        console.log('=== Initial State Check ===');
+        testShowElements();
         
         // Restore previous URL
         const state = vscode.getState();
@@ -1454,6 +1457,145 @@
         } else {
             showDefaultDashboard();
         }
+        
+        // Add direct test buttons for debugging
+        setTimeout(() => {
+            const debugBtns = document.createElement('div');
+            debugBtns.style.cssText = 'position: fixed; bottom: 10px; right: 10px; z-index: 10000; background: #333; padding: 10px; border: 1px solid #666;';
+            debugBtns.innerHTML = `
+                <button onclick="loadFileUrl('file:///Users/kurokawadaisuke/projects/ppn-page/mini-panel.html')" style="margin: 2px;">Test File URL</button><br>
+                <button onclick="loadHttpUrl('https://google.com')" style="margin: 2px;">Test Google</button><br>
+                <button onclick="testShowElements()" style="margin: 2px;">Show Elements</button><br>
+                <button onclick="checkIframeContent()" style="margin: 2px;">Check iframe</button><br>
+                <button onclick="showTestContent()" style="margin: 2px;">Test Content</button><br>
+                <button onclick="debugIframeSrc()" style="margin: 2px;">Debug Src</button><br>
+                <button onclick="testFetchFile()" style="margin: 2px;">Test Fetch</button>
+            `;
+            document.body.appendChild(debugBtns);
+        }, 1000);
+        
+        // Check iframe content
+        window.checkIframeContent = function() {
+            const iframe = document.getElementById('dashboard-iframe');
+            console.log('=== Checking iframe Content ===');
+            console.log('iframe element:', iframe);
+            console.log('iframe.src:', iframe.src);
+            console.log('iframe display:', iframe.style.display);
+            console.log('iframe dimensions:', iframe.offsetWidth + 'x' + iframe.offsetHeight);
+            console.log('iframe background:', window.getComputedStyle(iframe).backgroundColor);
+            
+            // Add red border to see if iframe is visible
+            iframe.style.border = '3px solid red';
+            console.log('Added red border to iframe - check if you can see it');
+            
+            // Check parent container
+            const container = iframe.parentElement;
+            console.log('Parent container:', container);
+            console.log('Parent dimensions:', container.offsetWidth + 'x' + container.offsetHeight);
+            
+            // Try to access content (will fail for cross-origin)
+            try {
+                const doc = iframe.contentDocument || iframe.contentWindow.document;
+                console.log('✅ Can access iframe document');
+                console.log('Body background:', doc.body.style.backgroundColor);
+                console.log('Body content preview:', doc.body.innerText.substring(0, 100) + '...');
+            } catch (e) {
+                console.log('❌ Cannot access iframe content (cross-origin)');
+            }
+        };
+        
+        // Debug iframe src
+        window.debugIframeSrc = function() {
+            const iframe = document.getElementById('dashboard-iframe');
+            console.log('=== Debug iframe src ===');
+            console.log('Current src:', iframe.src);
+            console.log('Decoded src:', decodeURIComponent(iframe.src));
+            
+            // Try to reload
+            console.log('Reloading iframe...');
+            const currentSrc = iframe.src;
+            iframe.src = '';
+            setTimeout(() => {
+                iframe.src = currentSrc;
+                console.log('Iframe reloaded');
+            }, 100);
+        };
+        
+        // Show test content directly in iframe
+        window.showTestContent = function() {
+            const iframe = document.getElementById('dashboard-iframe');
+            const loading = document.getElementById('loading');
+            const errorMessage = document.getElementById('error-message');
+            const defaultDashboard = document.getElementById('default-dashboard');
+            
+            // Hide all other elements
+            loading.style.display = 'none';
+            errorMessage.style.display = 'none';
+            defaultDashboard.style.display = 'none';
+            
+            // Show iframe with test content
+            iframe.style.display = 'block';
+            iframe.style.border = '5px solid blue';
+            
+            // Create test HTML content
+            const testHtml = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        body { 
+                            background: yellow; 
+                            color: black; 
+                            font-size: 24px; 
+                            padding: 20px;
+                            margin: 0;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>TEST CONTENT</h1>
+                    <p>If you can see this, iframe is working!</p>
+                    <p>Time: ${new Date().toLocaleTimeString()}</p>
+                </body>
+                </html>
+            `;
+            
+            // Set content using data URL
+            iframe.src = 'data:text/html;charset=utf-8,' + encodeURIComponent(testHtml);
+            console.log('Test content loaded with yellow background');
+        };
+        
+        // Test fetching file URL
+        window.testFetchFile = function() {
+            const iframe = document.getElementById('dashboard-iframe');
+            const url = iframe.src;
+            console.log('=== Testing fetch for file URL ===');
+            console.log('Fetching:', url);
+            
+            fetch(url)
+                .then(response => {
+                    console.log('✅ Fetch successful');
+                    console.log('Status:', response.status);
+                    console.log('Headers:', response.headers);
+                    return response.text();
+                })
+                .then(text => {
+                    console.log('Content length:', text.length);
+                    console.log('Content preview:', text.substring(0, 200) + '...');
+                    
+                    // Try to set content directly
+                    const blob = new Blob([text], { type: 'text/html' });
+                    const blobUrl = URL.createObjectURL(blob);
+                    console.log('Created blob URL:', blobUrl);
+                    
+                    // Set iframe to blob URL
+                    iframe.src = blobUrl;
+                    console.log('Set iframe src to blob URL');
+                })
+                .catch(error => {
+                    console.error('❌ Fetch failed:', error);
+                });
+        };
         
         function getStatusCodeMessage(status) {
             const messages = {
@@ -1527,6 +1669,61 @@
             }, 3000);
         }
         
+        // Check if URL is localhost with HTTPS
+        function isHttpsLocalhost(url) {
+            return url.startsWith('https://localhost') || url.match(/^https:\/\/127\.0\.0\.1/) || url.match(/^https:\/\/\[::1\]/);
+        }
+        
+        // Handle HTTPS localhost error
+        function handleHttpsLocalhostError(url) {
+            console.error('❌ Cannot access iframe content - likely HTTPS certificate issue');
+            console.log('💡 Solution: Use HTTP instead of HTTPS for localhost');
+            
+            showError(`
+                <div style="text-align: center; padding: 20px;">
+                    <h3 style="color: #e74c3c;">HTTPS Certificate Issue</h3>
+                    <p>Cannot display <strong>${url}</strong></p>
+                    <p>Self-signed certificates are blocked in iframes for security reasons.</p>
+                    <br>
+                    <p><strong>Solution:</strong> Use HTTP instead:</p>
+                    <code style="background: #333; padding: 10px; display: inline-block; margin: 10px;">
+                        ${url.replace('https://', 'http://')}
+                    </code>
+                    <br><br>
+                    <button onclick="loadHttpUrl('${url.replace('https://', 'http://')}')" 
+                            style="padding: 10px 20px; background: #0e639c; color: white; border: none; cursor: pointer;">
+                        Load with HTTP
+                    </button>
+                </div>
+            `);
+        }
+        
+        // Handle external HTTPS sites that block iframe embedding
+        function handleExternalHttpsError(url) {
+            console.error('❌ External HTTPS site may be blocking iframe embedding');
+            console.log('Common reasons: X-Frame-Options or Content-Security-Policy headers');
+            
+            showError(`
+                <div style="text-align: center; padding: 20px;">
+                    <h3 style="color: #e74c3c;">Cannot Embed This Site</h3>
+                    <p>The website <strong>${url}</strong> cannot be displayed in an iframe.</p>
+                    <p style="margin-top: 10px;">This is usually due to security policies set by the website that prevent embedding.</p>
+                    <br>
+                    <p><strong>Alternative options:</strong></p>
+                    <ul style="text-align: left; display: inline-block; margin: 10px 0;">
+                        <li>Open the site in a regular browser tab</li>
+                        <li>Check if the site offers an embeddable version</li>
+                        <li>Use a local development server instead</li>
+                    </ul>
+                    <br>
+                    <button onclick="vscode.postMessage({type: 'openExternal', url: '${url}'})" 
+                            style="padding: 10px 20px; background: #0e639c; color: white; border: none; cursor: pointer;">
+                        Open in Browser
+                    </button>
+                </div>
+            `);
+        }
+
         // Load HTTP/HTTPS URLs
         function loadHttpUrl(url) {
             console.log('🚀 loadHttpUrl called with:', url);
@@ -1562,8 +1759,13 @@
             console.log('Setting sandbox to:', sandboxValue);
             iframe.setAttribute('sandbox', sandboxValue);
             
+            // Track if load event fired
+            let loadFired = false;
+            let errorFired = false;
+            
             // Set up event handlers
             iframe.onload = () => {
+                loadFired = true;
                 console.log('✅ HTTP iframe.onload fired!');
                 loading.style.display = 'none';
                 
@@ -1616,6 +1818,7 @@
             };
             
             iframe.onerror = () => {
+                errorFired = true;
                 console.log('❌ HTTP iframe.onerror fired!');
                 loading.style.display = 'none';
                 showError('<div style="text-align: center;"><h3>Failed to load URL</h3><p>' + url + '</p></div>');
@@ -1623,7 +1826,7 @@
             };
             
             // Check if it's localhost with HTTPS
-            if (url.startsWith('https://localhost')) {
+            if (isHttpsLocalhost(url)) {
                 console.warn('⚠️ Warning: Using HTTPS with localhost may fail due to self-signed certificate');
                 console.log('💡 Try using HTTP instead: ' + url.replace('https://', 'http://'));
             }
@@ -1635,36 +1838,42 @@
             // Debug: Check after a delay
             setTimeout(() => {
                 console.log('=== After 2 seconds ===');
+                console.log('Load fired:', loadFired, 'Error fired:', errorFired);
                 testShowElements();
                 
-                // Check if iframe loaded but appears blank
-                if (url.startsWith('https://localhost')) {
-                    try {
-                        // Try to access iframe content (will fail for cross-origin)
-                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                        console.log('iframe document accessible');
-                    } catch (e) {
-                        console.error('❌ Cannot access iframe content - likely HTTPS certificate issue');
-                        console.log('💡 Solution: Use HTTP instead of HTTPS for localhost');
-                        
-                        // Show error message
-                        showError(`
-                            <div style="text-align: center; padding: 20px;">
-                                <h3 style="color: #e74c3c;">HTTPS Certificate Issue</h3>
-                                <p>Cannot display <strong>${url}</strong></p>
-                                <p>Self-signed certificates are blocked in iframes for security reasons.</p>
-                                <br>
-                                <p><strong>Solution:</strong> Use HTTP instead:</p>
-                                <code style="background: #333; padding: 10px; display: inline-block; margin: 10px;">
-                                    ${url.replace('https://', 'http://')}
-                                </code>
-                                <br><br>
-                                <button onclick="loadHttpUrl('${url.replace('https://', 'http://')}')" 
-                                        style="padding: 10px 20px; background: #0e639c; color: white; border: none; cursor: pointer;">
-                                    Load with HTTP
-                                </button>
-                            </div>
-                        `);
+                // If no events fired, it might be blocked
+                if (!loadFired && !errorFired) {
+                    console.log('⚠️ Neither onload nor onerror fired - possible blocking');
+                    
+                    // Different handling for localhost vs external sites
+                    if (isHttpsLocalhost(url)) {
+                        handleHttpsLocalhostError(url);
+                    } else if (url.startsWith('https://')) {
+                        handleExternalHttpsError(url);
+                    }
+                } else if (loadFired && iframe.style.display === 'block') {
+                    // Check if iframe loaded but appears blank
+                    if (isHttpsLocalhost(url)) {
+                        try {
+                            // Try to access iframe content (will fail for cross-origin)
+                            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                            console.log('iframe document accessible');
+                        } catch (e) {
+                            handleHttpsLocalhostError(url);
+                        }
+                    } else if (url.includes('google.com') || url.includes('youtube.com') || url.includes('facebook.com')) {
+                        // Known sites that block iframe embedding
+                        console.log('⚠️ Known site that blocks iframe embedding');
+                        handleExternalHttpsError(url);
+                    } else {
+                        // Try to check if content is actually visible
+                        try {
+                            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                            console.log('iframe document accessible - same origin');
+                        } catch (e) {
+                            console.log('iframe document not accessible - cross origin, but loaded');
+                            // For cross-origin, we can't check content, but if onload fired, assume it's OK
+                        }
                     }
                 }
             }, 2000);
@@ -1678,7 +1887,6 @@
         // Load file:// URLs
         function loadFileUrl(url) {
             console.log('📁 loadFileUrl called with:', url);
-            testShowElements(); // Show initial state
             
             const loading = document.getElementById('loading');
             const errorMessage = document.getElementById('error-message');
@@ -1686,12 +1894,17 @@
             const iframe = document.getElementById('dashboard-iframe');
             const fetchContainer = document.getElementById('fetch-container');
             
-            // Hide all containers
+            // Hide all containers and clear error
             console.log('Hiding all containers...');
             defaultDashboard.style.display = 'none';
             errorMessage.style.display = 'none';
+            errorMessage.innerHTML = ''; // Clear any previous error
             fetchContainer.style.display = 'none';
             iframe.style.display = 'none';
+            
+            // Also hide the annotation which takes up space
+            const annotation = document.getElementById('dashboard-annotation');
+            if (annotation) annotation.style.display = 'none';
             
             // Show loading
             console.log('Showing loading...');
@@ -1702,11 +1915,32 @@
             console.log('Requesting file URL conversion from extension...');
             vscode.postMessage({ type: 'resolveFileUrl', fileUrl: url });
             
-            // Debug: Check after a delay
-            setTimeout(() => {
-                console.log('=== After 2 seconds (file URL) ===');
+            // Set a timeout in case the message doesn't come back
+            const timeoutId = setTimeout(() => {
+                console.log('⚠️ File URL conversion timeout');
+                loading.style.display = 'none';
+                showError(`
+                    <div style="text-align: center; padding: 20px;">
+                        <h3 style="color: #e74c3c;">Failed to Load Local File</h3>
+                        <p>Could not access the file: <strong>${url}</strong></p>
+                        <p style="margin-top: 10px;">Please ensure:</p>
+                        <ul style="text-align: left; display: inline-block; margin: 10px 0;">
+                            <li>The file exists at the specified path</li>
+                            <li>The path is absolute (starts with /)</li>
+                            <li>You have permission to read the file</li>
+                        </ul>
+                        <br>
+                        <p><strong>Example file URL:</strong></p>
+                        <code style="background: #333; padding: 10px; display: inline-block; margin: 10px;">
+                            file:///Users/yourname/projects/dashboard.html
+                        </code>
+                    </div>
+                `);
                 testShowElements();
-            }, 2000);
+            }, 5000);
+            
+            // Store timeout ID to clear it if message comes back
+            window._fileUrlTimeoutId = timeoutId;
         }
         
         window.loadFileUrl = loadFileUrl;
@@ -1853,39 +2087,71 @@
             const msg = event.data;
             console.log('Received message:', msg);
             if (msg && msg.type === 'resolvedFileUrl') {
+                // Clear timeout if it exists
+                if (window._fileUrlTimeoutId) {
+                    clearTimeout(window._fileUrlTimeoutId);
+                    window._fileUrlTimeoutId = null;
+                }
+                
                 const iframe = document.getElementById('dashboard-iframe');
                 const loading = document.getElementById('loading');
                 const defaultDashboard = document.getElementById('default-dashboard');
                 const errorMessage = document.getElementById('error-message');
                 const fetchContainer = document.getElementById('fetch-container');
+                const annotation = document.getElementById('dashboard-annotation');
                 
                 if (msg.webviewUrl && iframe) {
-                    console.log('Setting iframe src to:', msg.webviewUrl);
+                    console.log('Received webview URL:', msg.webviewUrl);
                     
                     // Hide other containers
                     defaultDashboard.style.display = 'none';
                     errorMessage.style.display = 'none';
                     fetchContainer.style.display = 'none';
+                    if (annotation) annotation.style.display = 'none';
                     
-                    // Set up iframe
+                    // Set up iframe with proper styles
                     iframe.style.display = 'block';
-                    iframe.src = msg.webviewUrl;
+                    iframe.style.position = 'absolute';
+                    iframe.style.top = '0';
+                    iframe.style.left = '0';
+                    iframe.style.width = '100%';
+                    iframe.style.height = '100%';
+                    iframe.style.border = 'none';
                     
-                    // Simple onload handler for file URLs
-                    iframe.onload = () => {
-                        console.log('Local file loaded successfully');
-                        loading.style.display = 'none';
-                    };
+                    // Set sandbox for file URLs
+                    iframe.setAttribute('sandbox', getSandboxAttribute(config.sandboxLevel));
                     
-                    iframe.onerror = () => {
-                        console.error('Failed to load local file');
-                        loading.style.display = 'none';
-                        iframe.style.display = 'none';
-                        showError(`<div style="text-align: center; padding: 20px;">
-                            <h3 style="color: #e74c3c; margin-bottom: 10px;">Failed to Load Local File</h3>
-                            <p>Could not load the file. The file may not exist or may be inaccessible.</p>
-                        </div>`);
-                    };
+                    // Fetch and display the file content
+                    console.log('Fetching file content...');
+                    fetch(msg.webviewUrl)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            return response.text();
+                        })
+                        .then(text => {
+                            console.log('✅ File content fetched successfully, length:', text.length);
+                            
+                            // Create blob URL and set it to iframe
+                            const blob = new Blob([text], { type: 'text/html' });
+                            const blobUrl = URL.createObjectURL(blob);
+                            iframe.src = blobUrl;
+                            
+                            loading.style.display = 'none';
+                            console.log('✅ Local file displayed via blob URL');
+                            testShowElements();
+                        })
+                        .catch(error => {
+                            console.error('❌ Failed to fetch file:', error);
+                            loading.style.display = 'none';
+                            iframe.style.display = 'none';
+                            showError(`<div style="text-align: center; padding: 20px;">
+                                <h3 style="color: #e74c3c; margin-bottom: 10px;">Failed to Load Local File</h3>
+                                <p>Could not load the file: ${error.message}</p>
+                            </div>`);
+                            testShowElements();
+                        });
                 } else if (!msg.webviewUrl) {
                     console.error('Failed to convert file URL');
                     loading.style.display = 'none';
@@ -1893,6 +2159,7 @@
                         <h3 style="color: #e74c3c; margin-bottom: 10px;">Failed to Load Local File</h3>
                         <p>Could not access the local file. Please ensure the file exists and the path is correct.</p>
                     </div>`);
+                    testShowElements();
                 }
             }
         });

@@ -43,14 +43,16 @@ class DashboardViewProvider implements vscode.WebviewViewProvider {
 			enableScripts: true,
 			localResourceRoots: [
 				this._extensionUri,
-				vscode.Uri.file('/') // Allow access to all local files
+				vscode.Uri.file('/'), // Allow access to all local files
+				vscode.Uri.file('/Users/kurokawadaisuke/projects') // Add specific project directory
 			]
 		};
 
 		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
-		// Webviewからのfile://リクエストを受けて安全なURLに変換して返す
+		// Webviewからのメッセージを処理
 		webviewView.webview.onDidReceiveMessage(async (msg) => {
+			// file://リクエストを受けて安全なURLに変換して返す
 			if (msg && msg.type === 'resolveFileUrl' && msg.fileUrl) {
 				try {
 					// file://パスを抽出（file:// の後のパスを取得）
@@ -69,10 +71,18 @@ class DashboardViewProvider implements vscode.WebviewViewProvider {
 					webviewView.webview.postMessage({ type: 'resolvedFileUrl', webviewUrl: '' });
 				}
 			}
+			// 外部URLをブラウザで開く
+			else if (msg && msg.type === 'openExternal' && msg.url) {
+				try {
+					await vscode.env.openExternal(vscode.Uri.parse(msg.url));
+				} catch (e) {
+					console.error('Error opening external URL:', e);
+				}
+			}
 		});
 	}
 
-	private _getHtmlForWebview(webview: vscode.Webview) {
+	private _getHtmlForWebview(_webview: vscode.Webview) {
 		// Read the HTML template file
 		const htmlPath = vscode.Uri.joinPath(this._extensionUri, 'src', 'dashboard-template.html');
 		const htmlContent = fs.readFileSync(htmlPath.fsPath, 'utf8');
@@ -123,7 +133,11 @@ class DashboardPanel {
 			{
 				enableScripts: true,
 				retainContextWhenHidden: true,
-				localResourceRoots: [extensionUri, vscode.Uri.file('/')] // Allow access to all local files
+				localResourceRoots: [
+					extensionUri, 
+					vscode.Uri.file('/'),
+					vscode.Uri.file('/Users/kurokawadaisuke/projects') // Add specific project directory
+				]
 			}
 		);
 
@@ -142,7 +156,7 @@ class DashboardPanel {
 
 		// Update the content based on view state changes
 		this._panel.onDidChangeViewState(
-			e => {
+			_e => {
 				if (this._panel.visible) {
 					this._update();
 				}
@@ -171,8 +185,9 @@ class DashboardPanel {
 		this._panel.title = 'Dashboard Panel';
 		this._panel.webview.html = this._getHtmlForWebview(webview);
 
-		// Webviewからのfile://リクエストを受けて安全なURLに変換して返す
+		// Webviewからのメッセージを処理
 		webview.onDidReceiveMessage(async (msg) => {
+			// file://リクエストを受けて安全なURLに変換して返す
 			if (msg && msg.type === 'resolveFileUrl' && msg.fileUrl) {
 				try {
 					// file://パスを抽出（file:// の後のパスを取得）
@@ -191,10 +206,18 @@ class DashboardPanel {
 					webview.postMessage({ type: 'resolvedFileUrl', webviewUrl: '' });
 				}
 			}
+			// 外部URLをブラウザで開く
+			else if (msg && msg.type === 'openExternal' && msg.url) {
+				try {
+					await vscode.env.openExternal(vscode.Uri.parse(msg.url));
+				} catch (e) {
+					console.error('Error opening external URL:', e);
+				}
+			}
 		});
 	}
 
-	private _getHtmlForWebview(webview: vscode.Webview) {
+	private _getHtmlForWebview(_webview: vscode.Webview) {
 		// Read the HTML template file
 		const htmlPath = vscode.Uri.joinPath(this._extensionUri, 'src', 'dashboard-template.html');
 		const htmlContent = fs.readFileSync(htmlPath.fsPath, 'utf8');

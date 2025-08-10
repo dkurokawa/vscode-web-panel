@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>URL Loading Test</title>
+    <style>
+        body { 
+            background: #1e1e1e; 
+            color: #ccc; 
+            font-family: monospace; 
+            padding: 20px;
+        }
+        .test { 
+            margin: 20px 0; 
+            padding: 15px; 
+            border: 1px solid #666;
+        }
+        button { 
+            padding: 10px 20px; 
+            margin: 5px;
+            cursor: pointer;
+        }
+        #log { 
+            background: #000; 
+            color: #0f0; 
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+    <h1>URL Loading Test</h1>
+    
+    <div class="test">
+        <h2>Test File URL</h2>
+        <button onclick="testFileUrl()">Test file:// URL</button>
+    </div>
+    
+    <div class="test">
+        <h2>Test HTTPS Google</h2>
+        <button onclick="testGoogleUrl()">Test https://google.com</button>
+    </div>
+    
+    <div class="test">
+        <h2>Console Log</h2>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        // Mock VS Code API
+        const vscode = {
+            postMessage: (msg) => {
+                log('postMessage:', JSON.stringify(msg, null, 2));
+                
+                // Simulate file URL response after 1 second
+                if (msg.type === 'resolveFileUrl') {
+                    setTimeout(() => {
+                        log('Simulating resolvedFileUrl response...');
+                        window.postMessage({
+                            type: 'resolvedFileUrl',
+                            webviewUrl: 'vscode-webview://mock-url-for-file'
+                        }, '*');
+                    }, 1000);
+                }
+            },
+            setState: (state) => log('setState:', JSON.stringify(state)),
+            getState: () => null
+        };
+        
+        function log(...args) {
+            const logDiv = document.getElementById('log');
+            const msg = new Date().toISOString().substr(11, 8) + ' ' + args.join(' ') + '\n';
+            logDiv.textContent += msg;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function testFileUrl() {
+            log('=== Testing File URL ===');
+            const url = 'file:///Users/kurokawadaisuke/projects/ppn-page/mini-panel.html';
+            
+            log('Calling loadFileUrl with:', url);
+            
+            // Simplified loadFileUrl
+            log('Sending postMessage to request file URL conversion...');
+            vscode.postMessage({ type: 'resolveFileUrl', fileUrl: url });
+            
+            // Check what happens with message listener
+            window.addEventListener('message', (event) => {
+                log('Received message:', JSON.stringify(event.data));
+            });
+        }
+        
+        function testGoogleUrl() {
+            log('=== Testing Google URL ===');
+            const url = 'https://google.com';
+            
+            // Test iframe directly
+            const iframe = document.createElement('iframe');
+            iframe.style.width = '100%';
+            iframe.style.height = '200px';
+            iframe.style.border = '2px solid red';
+            
+            iframe.onload = () => log('✅ iframe.onload fired for:', url);
+            iframe.onerror = () => log('❌ iframe.onerror fired for:', url);
+            
+            log('Setting iframe.src =', url);
+            iframe.src = url;
+            
+            document.body.appendChild(iframe);
+            
+            // Check after 3 seconds
+            setTimeout(() => {
+                log('After 3 seconds - checking iframe status');
+                log('iframe.src:', iframe.src);
+                log('iframe displayed:', iframe.offsetParent !== null);
+            }, 3000);
+        }
+        
+        log('Test page loaded. Click buttons to test.');
+    </script>
+</body>
+</html>

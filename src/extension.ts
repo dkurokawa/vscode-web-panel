@@ -50,15 +50,15 @@ class DashboardViewProvider implements vscode.WebviewViewProvider {
 
 		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
-		// Webviewからのメッセージを処理
+		// Handle messages from webview
 		webviewView.webview.onDidReceiveMessage(async (msg) => {
-			// file://リクエストを受けて安全なURLに変換して返す
+			// Convert file:// requests to safe URLs and return
 			if (msg && msg.type === 'resolveFileUrl' && msg.fileUrl) {
 				try {
-					// file://パスを抽出（file:// の後のパスを取得）
+					// Extract file:// path (get path after file://)
 					let filePath = msg.fileUrl;
 					if (filePath.startsWith('file://')) {
-						// file:// を除去
+						// Remove file://
 						filePath = filePath.substring(7);
 					}
 					console.log('Converting file path:', filePath);
@@ -71,7 +71,7 @@ class DashboardViewProvider implements vscode.WebviewViewProvider {
 					webviewView.webview.postMessage({ type: 'resolvedFileUrl', webviewUrl: '' });
 				}
 			}
-			// 外部URLをブラウザで開く
+			// Open external URL in browser
 			else if (msg && msg.type === 'openExternal' && msg.url) {
 				try {
 					await vscode.env.openExternal(vscode.Uri.parse(msg.url));
@@ -185,15 +185,15 @@ class DashboardPanel {
 		this._panel.title = 'Dashboard Panel';
 		this._panel.webview.html = this._getHtmlForWebview(webview);
 
-		// Webviewからのメッセージを処理
+		// Handle messages from webview
 		webview.onDidReceiveMessage(async (msg) => {
-			// file://リクエストを受けて安全なURLに変換して返す
+			// Convert file:// requests to safe URLs and return
 			if (msg && msg.type === 'resolveFileUrl' && msg.fileUrl) {
 				try {
-					// file://パスを抽出（file:// の後のパスを取得）
+					// Extract file:// path (get path after file://)
 					let filePath = msg.fileUrl;
 					if (filePath.startsWith('file://')) {
-						// file:// を除去
+						// Remove file://
 						filePath = filePath.substring(7);
 					}
 					console.log('Converting file path:', filePath);
@@ -206,7 +206,7 @@ class DashboardPanel {
 					webview.postMessage({ type: 'resolvedFileUrl', webviewUrl: '' });
 				}
 			}
-			// 外部URLをブラウザで開く
+			// Open external URL in browser
 			else if (msg && msg.type === 'openExternal' && msg.url) {
 				try {
 					await vscode.env.openExternal(vscode.Uri.parse(msg.url));

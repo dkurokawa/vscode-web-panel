@@ -5,6 +5,29 @@ All notable changes to the "vscode-web-panel" extension will be documented in th
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-01-10
+
+### Added
+- 13 visual themes (Simple, Retro, Vintage, Botanical, Toy, Neon, Casino, Diner, Western, Cyber, Pastel, Dark, Legacy)
+- URL history feature - remembers last 5 visited URLs
+- Support for file:// URLs using fetch mode
+- Auto-detection and handling of embeddable alternatives for popular sites
+- Custom dropdown for URL history with better positioning control
+- Collapsible demo dashboard notice
+
+### Changed
+- Improved theme switcher layout with 3-column grid
+- Enhanced error handling for blocked iframe content
+- Smaller font sizes for theme buttons (10px)
+- All Japanese text translated to English for international OSS release
+- Better handling of X-Frame-Options restrictions
+
+### Fixed
+- File URL display issues in webview
+- Theme button layout consistency across different themes
+- Performance issues with Toy theme animations
+- URL input field visibility and positioning
+
 ## [0.1.0] - 2025-01-06
 
 ### Added

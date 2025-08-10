@@ -22,7 +22,7 @@
         }
         
         .header {
-            /* 背景・枠・角丸・パディング削除 */
+            /* Remove background, border, rounded corners, and padding */
             margin-bottom: 8px;
             display: flex;
             align-items: center;
@@ -336,17 +336,44 @@
             position: relative;
         }
         
+        /* Theme switcher container */
+        #theme-switcher {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: var(--vscode-input-background, #3c3c3c);
+            border-radius: 4px;
+        }
+        
+        #theme-switcher > span {
+            display: block;
+            font-size: 11px;
+            color: var(--vscode-foreground, #cccccc);
+            margin-bottom: 8px;
+        }
+        
+        /* Theme button container */
+        .theme-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            flex: 1;
+        }
+        
         /* Theme button styles */
         .theme-btn {
             background-color: var(--vscode-button-secondaryBackground, #3a3d41);
             color: var(--vscode-button-secondaryForeground, #cccccc);
             border: 1px solid var(--vscode-panel-border, #3c3c3c);
-            padding: 4px 12px;
-            margin: 0 4px;
+            padding: 3px 6px;
+            margin: 0;
             border-radius: 3px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 10px;
             transition: all 0.2s;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .theme-btn:hover {
@@ -361,7 +388,7 @@
         }
         
         /* Theme styles */
-        /* レトロテーマ - レトロPC風 */
+        /* Retro Theme - Retro PC Style */
         body.theme-retro {
             --theme-bg: #000000;
             --theme-fg: #00ff00;
@@ -393,8 +420,14 @@
         }
         body.theme-retro .metric-label { color: #00aa00; }
         body.theme-retro .metric-value { color: #00ff00; }
+        body.theme-retro .default-dashboard {
+            background-color: #001100;
+            border: 2px solid #00ff00;
+            padding: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
         
-        /* ビンテージテーマ - 古びた茶色 */
+        /* Vintage Theme - Aged Brown */
         body.theme-vintage {
             --theme-bg: #2a2520;
             --theme-fg: #d4c5a0;
@@ -424,20 +457,35 @@
             background-color: #1f1915;
             border-color: #5a4d40;
         }
+        body.theme-vintage .default-dashboard {
+            background-color: #1a1410;
+            background-image: 
+                linear-gradient(45deg, transparent 30%, rgba(139, 69, 19, 0.3) 50%, transparent 70%);
+            border-radius: 4px;
+            padding: 15px;
+            box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5);
+        }
         
-        /* ボタニカルテーマ */
+        /* Botanical Theme */
         body.theme-botanical {
-            --theme-bg: #e8f5e8;
+            --theme-bg: #2e7d32;
             --theme-fg: #1b5e20;
             --theme-accent: #4caf50;
             --theme-panel: #c8e6c9;
-            background-image: repeating-linear-gradient(
-                0deg,
-                #d4a574,  /* 薄茶色 */
-                #d4a574 2px,
-                #c8986b 2px,  /* 少し濃い茶色 */
-                #c8986b 4px
-            );
+            background-color: #2e7d32;
+            background-image: 
+                radial-gradient(circle at 20% 80%, transparent 50%, rgba(27, 94, 32, 0.3) 50%, rgba(27, 94, 32, 0.3) 52%, transparent 52%),
+                radial-gradient(circle at 80% 20%, transparent 50%, rgba(46, 125, 50, 0.3) 50%, rgba(46, 125, 50, 0.3) 52%, transparent 52%),
+                radial-gradient(circle at 40% 40%, transparent 50%, rgba(56, 142, 60, 0.3) 50%, rgba(56, 142, 60, 0.3) 52%, transparent 52%),
+                radial-gradient(circle at 90% 70%, transparent 50%, rgba(67, 160, 71, 0.3) 50%, rgba(67, 160, 71, 0.3) 52%, transparent 52%),
+                linear-gradient(45deg, transparent 40%, rgba(27, 94, 32, 0.2) 40%, rgba(27, 94, 32, 0.2) 60%, transparent 60%),
+                linear-gradient(-45deg, transparent 40%, rgba(46, 125, 50, 0.2) 40%, rgba(46, 125, 50, 0.2) 60%, transparent 60%),
+                linear-gradient(30deg, transparent 30%, rgba(56, 142, 60, 0.15) 30%, rgba(56, 142, 60, 0.15) 35%, transparent 35%),
+                linear-gradient(-30deg, transparent 30%, rgba(67, 160, 71, 0.15) 30%, rgba(67, 160, 71, 0.15) 35%, transparent 35%),
+                linear-gradient(60deg, transparent 70%, rgba(27, 94, 32, 0.1) 70%, rgba(27, 94, 32, 0.1) 75%, transparent 75%),
+                linear-gradient(-60deg, transparent 70%, rgba(46, 125, 50, 0.1) 70%, rgba(46, 125, 50, 0.1) 75%, transparent 75%);
+            background-size: 200px 200px, 250px 250px, 180px 180px, 220px 220px, 100px 100px, 100px 100px, 80px 80px, 80px 80px, 120px 120px, 120px 120px;
+            background-position: 0 0, 50px 50px, 100px 0, 150px 100px, 0 0, 50px 0, 25px 25px, 75px 75px, 0 50px, 50px 100px;
         }
         body.theme-botanical .service-item {
             background-color: var(--theme-panel);
@@ -493,8 +541,41 @@
             background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
             border: 1px solid #a5d6a7;
         }
+        body.theme-botanical .default-dashboard {
+            background-color: #d7ccc8;
+            background-image: 
+                /* Thick branch patterns */
+                radial-gradient(circle at 15% 85%, transparent 45%, rgba(161, 136, 127, 0.3) 45%, rgba(161, 136, 127, 0.3) 48%, transparent 48%),
+                radial-gradient(circle at 85% 15%, transparent 45%, rgba(141, 110, 99, 0.3) 45%, rgba(141, 110, 99, 0.3) 48%, transparent 48%),
+                /* Intertwining branches */
+                linear-gradient(25deg, transparent 48%, rgba(161, 136, 127, 0.25) 48%, rgba(161, 136, 127, 0.25) 52%, transparent 52%),
+                linear-gradient(-25deg, transparent 48%, rgba(141, 110, 99, 0.25) 48%, rgba(141, 110, 99, 0.25) 52%, transparent 52%),
+                linear-gradient(65deg, transparent 46%, rgba(161, 136, 127, 0.2) 46%, rgba(161, 136, 127, 0.2) 49%, transparent 49%),
+                linear-gradient(-65deg, transparent 46%, rgba(141, 110, 99, 0.2) 46%, rgba(141, 110, 99, 0.2) 49%, transparent 49%),
+                /* Thin branches */
+                linear-gradient(45deg, transparent 49%, rgba(121, 85, 72, 0.15) 49%, rgba(121, 85, 72, 0.15) 50%, transparent 50%),
+                linear-gradient(-45deg, transparent 49%, rgba(109, 76, 65, 0.15) 49%, rgba(109, 76, 65, 0.15) 50%, transparent 50%),
+                /* Wood knots */
+                radial-gradient(ellipse at 30% 30%, rgba(161, 136, 127, 0.2) 0%, transparent 20%),
+                radial-gradient(ellipse at 70% 70%, rgba(141, 110, 99, 0.15) 0%, transparent 15%),
+                radial-gradient(ellipse at 60% 20%, rgba(161, 136, 127, 0.18) 0%, transparent 18%),
+                radial-gradient(ellipse at 20% 60%, rgba(121, 85, 72, 0.12) 0%, transparent 22%);
+            background-size: 
+                300px 300px, 300px 300px,
+                200px 200px, 200px 200px, 250px 250px, 250px 250px,
+                150px 150px, 150px 150px,
+                100px 80px, 80px 100px, 90px 70px, 110px 90px;
+            background-position: 
+                0 0, 150px 150px,
+                0 0, 100px 0, 50px 50px, 150px 50px,
+                25px 25px, 75px 75px,
+                30px 40px, 170px 180px, 280px 50px, 80px 200px;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: inset 0 0 20px rgba(121, 85, 72, 0.1);
+        }
         
-        /* トイテーマ - おもちゃ工場 */
+        /* Toy Theme - Toy Factory */
         @keyframes toy-bounce {
             0%, 100% { transform: translateY(0) rotate(0deg); }
             50% { transform: translateY(-10px) rotate(5deg); }
@@ -525,7 +606,6 @@
             bottom: 20px;
             right: 20px;
             font-size: 30px;
-            animation: toy-bounce 3s ease-in-out infinite;
         }
         body.theme-toy .service-item {
             background-color: var(--theme-panel);
@@ -556,7 +636,6 @@
         body.theme-toy .status-dot {
             width: 12px;
             height: 12px;
-            animation: toy-bounce 1.5s ease-in-out infinite;
         }
         body.theme-toy .status-dot.status-active { background-color: #00b894; }
         body.theme-toy .status-dot.status-warning { background-color: #fdcb6e; }
@@ -571,8 +650,15 @@
         body.theme-toy .metric:nth-child(3) { transform: rotate(-1deg); }
         body.theme-toy .metric-label { color: rgba(255,255,255,0.9); }
         body.theme-toy .metric-value { color: white; }
+        body.theme-toy .default-dashboard {
+            background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
         
-        /* ネオンテーマ */
+        /* Neon Theme */
         body.theme-neon {
             --theme-bg: #0a0a0a;
             --theme-fg: #00ff41;
@@ -629,8 +715,14 @@
             border: 2px solid #0fbcf9;
             box-shadow: 0 0 5px rgba(15,188,249,0.3);
         }
+        body.theme-neon .default-dashboard {
+            background-color: #16213e;
+            border: 2px solid #00ff41;
+            padding: 15px;
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.1);
+        }
         
-        /* ベガステーマ */
+        /* Vegas Theme */
         @keyframes vegas-lights {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -697,9 +789,16 @@
         }
         body.theme-vegas .metric-label,
         body.theme-vegas .metric-value { color: white; }
+        body.theme-vegas .default-dashboard {
+            background: linear-gradient(135deg, #2d1b69 0%, #3d2b79 100%);
+            border: 3px solid #ffd700;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.4), inset 0 0 30px rgba(255, 20, 147, 0.2);
+        }
         
         
-        /* ダイナーテーマ - 50年代アメリカンダイナー */
+        /* Diner Theme - 50s American Diner */
         body.theme-diner {
             --theme-bg: #f0f0f0;
             --theme-fg: #222222;
@@ -742,7 +841,7 @@
         body.theme-diner .service-item:nth-child(3)::before { content: '🥤'; }
         body.theme-diner .service-item:nth-child(4)::before { content: '🍕'; }
         body.theme-diner .service-name {
-            background-color: #40E0D0;
+            background-color: #ffffff;
             color: #ff1744;
             font-weight: 900;
             font-size: 18px;
@@ -752,6 +851,12 @@
             padding: 4px 12px;
             margin: -4px -12px 4px -12px;
             border-radius: 6px 6px 0 0;
+        }
+        body.theme-diner .default-dashboard {
+            background-color: #40E0D0;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
         body.theme-diner .service-description {
             color: #444444;
@@ -790,7 +895,7 @@
             text-shadow: 1px 1px 0 #000000;
         }
         
-        /* ウェスタンテーマ - 西部開拓風 */
+        /* Western Theme - Wild West Style */
         body.theme-western {
             --theme-bg: #d4a574;
             --theme-fg: #3e2723;
@@ -853,10 +958,25 @@
             border: 1px solid #8d6e63;
             color: #fff3e0;
         }
+        body.theme-western .default-dashboard {
+            background-color: #d4a574;
+            background-image: 
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 10px,
+                    rgba(109, 76, 65, 0.1) 10px,
+                    rgba(109, 76, 65, 0.1) 20px
+                );
+            border: 3px solid #6d4c41;
+            border-radius: 0;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
         
         
         
-        /* サイバーパンクテーマ - ネオンフューチャー */
+        /* Cyberpunk Theme - Neon Future */
         @keyframes cyber-glitch {
             0%, 100% { transform: translateX(0); }
             20% { transform: translateX(-2px); }
@@ -916,8 +1036,15 @@
             color: #00d4ff;
             clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
         }
+        body.theme-cyber .default-dashboard {
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            border: 2px solid #00d4ff;
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.3), inset 0 0 20px rgba(0, 212, 255, 0.1);
+            clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+        }
         
-        /* パステルカワイイテーマ - Kawaiiパステル */
+        /* Pastel Kawaii Theme - Kawaii Pastel */
         @keyframes kawaii-float {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-5px); }
@@ -991,8 +1118,15 @@
             font-weight: bold;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        body.theme-pastel .default-dashboard {
+            background: linear-gradient(135deg, #ffc0cb 0%, #e6e6fa 100%);
+            border: 3px solid #fff;
+            border-radius: 25px;
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(255, 150, 180, 0.3);
+        }
         
-        /* ダークモードテーマ - ミニマルダーク */
+        /* Dark Mode Theme - Minimal Dark */
         body.theme-dark {
             --theme-bg: #0d1117;
             --theme-fg: #c9d1d9;
@@ -1030,20 +1164,20 @@
             opacity: 1;
         }
         body.theme-dark .service-name {
-            color: #79c0ff;  /* 関数名のような青 */
+            color: #79c0ff;  /* Function name blue */
             font-weight: 600;
             font-size: 14px;
         }
         body.theme-dark .service-description {
-            color: #a5d6ff;  /* コメントのような薄い青 */
+            color: #a5d6ff;  /* Comment-like light blue */
             font-size: 12px;
             font-style: italic;
         }
         body.theme-dark .service-info > div:first-child {
-            color: #ffa657;  /* アイコンをオレンジに */
+            color: #ffa657;  /* Icon orange */
         }
         body.theme-dark .status-indicator span {
-            color: #e3b341;  /* ステータステキストを黄色に */
+            color: #e3b341;  /* Status text yellow */
         }
         body.theme-dark .status-dot.status-active { 
             background-color: #3fb950;
@@ -1064,19 +1198,26 @@
             border-color: #58a6ff;
         }
         body.theme-dark .metric-label {
-            color: #ff7b72;  /* 変数名のような赤 */
+            color: #ff7b72;  /* Variable name red */
             font-size: 11px;
             text-transform: uppercase;
         }
         body.theme-dark .metric-value {
-            color: #a5d6ff;  /* 値を明るい青に */
+            color: #a5d6ff;  /* Bright blue for values */
             font-weight: 600;
         }
-        body.theme-dark .metric:nth-child(1) .metric-value { color: #7ee787; }  /* 緑 */
-        body.theme-dark .metric:nth-child(2) .metric-value { color: #ffa657; }  /* オレンジ */
-        body.theme-dark .metric:nth-child(3) .metric-value { color: #d2a8ff; }  /* 紫 */
+        body.theme-dark .metric:nth-child(1) .metric-value { color: #7ee787; }  /* Green */
+        body.theme-dark .metric:nth-child(2) .metric-value { color: #ffa657; }  /* Orange */
+        body.theme-dark .metric:nth-child(3) .metric-value { color: #d2a8ff; }  /* Purple */
+        body.theme-dark .default-dashboard {
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+        }
         
-        /* レガシーテーマ - 90年代インターネット風 */
+        /* Legacy Theme - 90s Internet Style */
         @keyframes blink {
             0%, 50% { opacity: 1; }
             51%, 100% { opacity: 0; }
@@ -1220,8 +1361,6 @@
         body.theme-legacy #theme-switcher {
             background-color: #FFFF00;
             border: 3px solid #FF0000;
-            padding: 10px;
-            margin-bottom: 20px;
         }
         body.theme-legacy .theme-btn {
             background-color: #C0C0C0;
@@ -1250,7 +1389,7 @@
                    placeholder="https://example.com/dashboard"
                    autocomplete="off">
             <div id="url-history-dropdown" class="url-history-dropdown" style="display: none;"></div>
-            <!-- デバッグボタン - 必要な時はコメントを外してください -->
+            <!-- Debug button - Uncomment when needed -->
             <!-- <button onclick="showDebug()" style="margin-left: 5px; padding: 4px 8px; cursor: pointer;" title="Show debug console">🐛</button> -->
             <!-- <button onclick="loadDashboard()" style="margin-left: 5px; padding: 4px 8px; cursor: pointer;" title="Load URL">Go</button> -->
             <!-- <button onclick="minimalTest()" style="margin-left: 5px; padding: 4px 8px; cursor: pointer; background: #f44;" title="Test iframe">Test</button> -->
@@ -1282,21 +1421,23 @@
         <div id="fetch-container" style="width:100%;height:100%;overflow:auto;display:none;"></div>
         <!-- Default dashboard -->
         <div class="default-dashboard" id="default-dashboard">
-            <div id="theme-switcher" style="margin-bottom:20px; text-align:center;">
-                <span style="font-size:13px;">Theme:</span>
-                <button class="theme-btn" data-theme="simple">シンプル</button>
-                <button class="theme-btn" data-theme="retro">レトロ</button>
-                <button class="theme-btn" data-theme="vintage">ビンテージ</button>
-                <button class="theme-btn" data-theme="botanical">ボタニカル</button>
-                <button class="theme-btn" data-theme="toy">トイ</button>
-                <button class="theme-btn" data-theme="neon">ネオン</button>
-                <button class="theme-btn" data-theme="vegas">ベガス</button>
-                <button class="theme-btn" data-theme="diner">ダイナー</button>
-                <button class="theme-btn" data-theme="western">ウェスタン</button>
-                <button class="theme-btn" data-theme="cyber">サイバー</button>
-                <button class="theme-btn" data-theme="pastel">パステル</button>
-                <button class="theme-btn" data-theme="dark">ダーク</button>
-                <button class="theme-btn" data-theme="legacy">レガシー</button>
+            <div id="theme-switcher">
+                <span>Theme:</span>
+                <div class="theme-buttons">
+                    <button class="theme-btn" data-theme="simple">Simple</button>
+                    <button class="theme-btn" data-theme="retro">Retro</button>
+                    <button class="theme-btn" data-theme="vintage">Vintage</button>
+                    <button class="theme-btn" data-theme="botanical">Botanical</button>
+                    <button class="theme-btn" data-theme="toy">Toy</button>
+                    <button class="theme-btn" data-theme="neon">Neon</button>
+                    <button class="theme-btn" data-theme="vegas">Casino</button>
+                    <button class="theme-btn" data-theme="diner">Diner</button>
+                    <button class="theme-btn" data-theme="western">Western</button>
+                    <button class="theme-btn" data-theme="cyber">Cyber</button>
+                    <button class="theme-btn" data-theme="pastel">Pastel</button>
+                    <button class="theme-btn" data-theme="dark">Dark</button>
+                    <button class="theme-btn" data-theme="legacy">Legacy</button>
+                </div>
             </div>
             <div id="dashboard-annotation"></div>
             <div class="service-list">
@@ -1395,7 +1536,7 @@
     </div>
     
     <script>
-        // テーマ切り替え
+        // Theme switching
         document.querySelectorAll('.theme-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.body.classList.remove('theme-simple', 'theme-retro', 'theme-vintage', 'theme-botanical', 'theme-toy', 'theme-neon', 'theme-vegas', 'theme-diner', 'theme-western', 'theme-cyber', 'theme-pastel', 'theme-dark', 'theme-legacy');
@@ -1406,7 +1547,7 @@
                 btn.classList.add('active');
             });
         });
-        // デフォルトテーマ
+        // Default theme
         document.body.classList.add('theme-simple');
         document.querySelector('[data-theme="simple"]').classList.add('active');
         // Send message via VSCode API
@@ -1614,47 +1755,25 @@
             }
         }
 
-        // 日本語・英語注釈を自動表示
+        // Display dashboard annotation
         function setDashboardAnnotation() {
-            const lang = (navigator.language || '').toLowerCase();
-            let html = '';
-            if (lang.startsWith('ja')) {
-                html = `
-                <div style="margin-bottom:16px;">
-                    <details>
-                        <summary style="cursor: pointer; padding: 8px 12px; background: var(--vscode-input-background,#333); border-radius: 4px; border: 1px solid var(--vscode-panel-border,#3c3c3c); user-select: none;">
-                            <b>ℹ️ これはデモ表示です</b> <br/><span style="font-size: 12px; color: #aaa;">（クリックで展開）</span>
-                        </summary>
-                        <div style="margin-top: 8px; padding: 12px; background: var(--vscode-input-background,#333); border-radius: 4px; border: 1px solid var(--vscode-panel-border,#3c3c3c);">
-                            この画面はサンプルのダッシュボードです。<br>
-                            実際には「URL入力欄」に <b>ローカルで起動したWebサービス</b> や <b>本番環境のURL</b> を入力してご利用ください。<br>
-                            <br>
-                            <b>ファイルURLの例:</b><br>
-                            <code>file:///Users/yourname/projects/report.html</code><br>
-                            <span style="font-size:12px; color:#aaa;">（絶対パスで指定。Macの場合は「file:///」+フルパス）</span>
-                        </div>
-                    </details>
-                </div>
-                `;
-            } else {
-                html = `
-                <div style="margin-bottom:16px;">
-                    <details>
-                        <summary style="cursor: pointer; padding: 8px 12px; background: var(--vscode-input-background,#333); border-radius: 4px; border: 1px solid var(--vscode-panel-border,#3c3c3c); user-select: none;">
-                            <b>ℹ️ This is a demo dashboard</b> <span style="font-size: 12px; color: #aaa;">(Click to expand)</span>
-                        </summary>
-                        <div style="margin-top: 8px; padding: 12px; background: var(--vscode-input-background,#333); border-radius: 4px; border: 1px solid var(--vscode-panel-border,#3c3c3c);">
-                            This screen is a sample dashboard.<br>
-                            For actual use, please enter the <b>local web service URL</b> or <b>production URL</b> in the URL input field.<br>
-                            <br>
-                            <b>File URL example:</b><br>
-                            <code>file:///Users/yourname/projects/report.html</code><br>
-                            <span style="font-size:12px; color:#aaa;">(Specify absolute path. On Mac, use "file:///" + full path)</span>
-                        </div>
-                    </details>
-                </div>
-                `;
-            }
+            const html = `
+            <div style="margin-bottom:16px;">
+                <details>
+                    <summary style="cursor: pointer; padding: 8px 12px; background: var(--vscode-input-background,#333); border-radius: 4px; border: 1px solid var(--vscode-panel-border,#3c3c3c); user-select: none;">
+                        <b>ℹ️ This is a demo dashboard</b> <span style="font-size: 12px; color: #aaa;">(Click to expand)</span>
+                    </summary>
+                    <div style="margin-top: 8px; padding: 12px; background: var(--vscode-input-background,#333); border-radius: 4px; border: 1px solid var(--vscode-panel-border,#3c3c3c);">
+                        This screen is a sample dashboard.<br>
+                        For actual use, please enter the <b>local web service URL</b> or <b>production URL</b> in the URL input field.<br>
+                        <br>
+                        <b>File URL example:</b><br>
+                        <code>file:///Users/yourname/projects/report.html</code><br>
+                        <span style="font-size:12px; color:#aaa;">(Specify absolute path. On Mac, use "file:///" + full path)</span>
+                    </div>
+                </details>
+            </div>
+            `;
             document.getElementById('dashboard-annotation').innerHTML = html;
         }
         setDashboardAnnotation();
@@ -1805,7 +1924,7 @@
         }
         
         // Add direct test buttons for debugging
-        // コメントアウト - 必要な時は以下のコメントを外してください
+        // Commented out - uncomment when needed for debugging
         /*
         setTimeout(() => {
             const debugBtns = document.createElement('div');
@@ -2189,10 +2308,10 @@
                 }
             }
             
-            // Twitter/X - 個別のツイート
+            // Twitter/X - Individual tweets
             if (url.match(/twitter\.com\/\w+\/status\/\d+/) || url.match(/x\.com\/\w+\/status\/\d+/)) {
-                // Twitterの埋め込みは複雑なので、公式の埋め込みコードが必要
-                return null; // 代わりに埋め込みコードの取得方法を案内
+                // Twitter embedding is complex and requires official embed code
+                return null; // Guide the user on how to get embed code instead
             }
             
             // Google Maps
@@ -2203,7 +2322,7 @@
             
             // GitHub Gist
             if (url.match(/gist\.github\.com\/\w+\/\w+/)) {
-                // Gistは.jsを追加すれば埋め込み可能
+                // Gist can be embedded by adding .js
                 return url + '.js';
             }
             
@@ -2600,7 +2719,7 @@
             });
             updateToggleIcon();
         });
-        // 拡張機能から安全なWebview用URLを受け取る
+        // Receive safe webview URL from extension
         window.addEventListener('message', event => {
             const msg = event.data;
             console.log('Received message:', msg);

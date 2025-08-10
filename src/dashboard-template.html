@@ -113,6 +113,9 @@
             transform: translate(-50%, -50%);
             text-align: center;
             padding: 20px;
+            z-index: 100;
+            max-width: 90%;
+            width: 600px;
         }
         
         .loading {
@@ -120,7 +123,11 @@
         }
         
         .error-message {
-            color: var(--vscode-errorForeground, #f44747);
+            background-color: var(--vscode-editor-background, #1e1e1e);
+            border: 1px solid var(--vscode-panel-border, #3c3c3c);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            color: var(--vscode-foreground, #cccccc);
         }
         
         /* Simple style for default dashboard */
@@ -1062,10 +1069,11 @@
                    id="dashboard-url" 
                    class="url-input" 
                    placeholder="https://example.com/dashboard">
-            <button onclick="showDebug()" style="margin-left: 5px; padding: 4px 8px; cursor: pointer;" title="Show debug console">🐛</button>
+            <!-- デバッグボタン - 必要な時はコメントを外してください -->
+            <!-- <button onclick="showDebug()" style="margin-left: 5px; padding: 4px 8px; cursor: pointer;" title="Show debug console">🐛</button> -->
             <button onclick="loadDashboard()" style="margin-left: 5px; padding: 4px 8px; cursor: pointer;" title="Load URL">Go</button>
-            <button onclick="minimalTest()" style="margin-left: 5px; padding: 4px 8px; cursor: pointer; background: #f44;" title="Test iframe">Test</button>
-            <button onclick="loadHttpUrl('http://localhost:9443')" style="margin-left: 5px; padding: 4px 8px; cursor: pointer;" title="Load localhost">9443</button>
+            <!-- <button onclick="minimalTest()" style="margin-left: 5px; padding: 4px 8px; cursor: pointer; background: #f44;" title="Test iframe">Test</button> -->
+            <!-- <button onclick="loadHttpUrl('http://localhost:9443')" style="margin-left: 5px; padding: 4px 8px; cursor: pointer;" title="Load localhost">9443</button> -->
         </div>
     </div>
     
@@ -1265,7 +1273,14 @@
             const errorMessage = document.getElementById('error-message');
             errorMessage.innerHTML = html;
             errorMessage.style.display = 'block';
+            errorMessage.style.position = 'relative';
+            errorMessage.style.zIndex = '100';
             errorShownAt = Date.now();
+            console.log('Error message shown');
+            
+            // Also hide iframe to make sure error is visible
+            const iframe = document.getElementById('dashboard-iframe');
+            if (iframe) iframe.style.display = 'none';
         }
         
         function hideError() {
@@ -1427,20 +1442,20 @@
         };
         
         // Auto-show debug console for testing
-        showDebug();
+        // showDebug(); // コメントアウト - デバッグ時は有効化
         console.log('=== Web Panel Started ===');
-        console.log('Debug console auto-opened');
-        console.log('Available test functions:');
-        console.log('  - testShowElements()');
-        console.log('  - minimalTest()');
-        console.log('  - testUrls() - Test multiple URLs');
-        console.log('  - loadHttpUrl("http://localhost:9443")');
-        console.log('  - loadFileUrl("file:///path/to/file.html")');
-        console.log('  - loadDashboard()');
+        // console.log('Debug console auto-opened');
+        // console.log('Available test functions:');
+        // console.log('  - testShowElements()');
+        // console.log('  - minimalTest()');
+        // console.log('  - testUrls() - Test multiple URLs');
+        // console.log('  - loadHttpUrl("http://localhost:9443")');
+        // console.log('  - loadFileUrl("file:///path/to/file.html")');
+        // console.log('  - loadDashboard()');
         
         // Initial state check
-        console.log('=== Initial State Check ===');
-        testShowElements();
+        // console.log('=== Initial State Check ===');
+        // testShowElements();
         
         // Restore previous URL
         const state = vscode.getState();
@@ -1459,6 +1474,8 @@
         }
         
         // Add direct test buttons for debugging
+        // コメントアウト - 必要な時は以下のコメントを外してください
+        /*
         setTimeout(() => {
             const debugBtns = document.createElement('div');
             debugBtns.style.cssText = 'position: fixed; bottom: 10px; right: 10px; z-index: 10000; background: #333; padding: 10px; border: 1px solid #666;';
@@ -1473,6 +1490,7 @@
             `;
             document.body.appendChild(debugBtns);
         }, 1000);
+        */
         
         // Check iframe content
         window.checkIframeContent = function() {
@@ -1702,23 +1720,181 @@
         function handleExternalHttpsError(url) {
             console.error('❌ External HTTPS site may be blocking iframe embedding');
             console.log('Common reasons: X-Frame-Options or Content-Security-Policy headers');
+            console.log('Showing error message for:', url);
+            
+            // Check if it's a known dashboard/app that requires authentication
+            const isDashboard = url.includes('dashboard') || url.includes('console') || 
+                               url.includes('admin') || url.includes('app.');
+            const requiresAuth = url.includes('login') || url.includes('auth') || 
+                                url.includes('signin') || isDashboard;
             
             showError(`
                 <div style="text-align: center; padding: 20px;">
                     <h3 style="color: #e74c3c;">Cannot Embed This Site</h3>
                     <p>The website <strong>${url}</strong> cannot be displayed in an iframe.</p>
                     <p style="margin-top: 10px;">This is usually due to security policies set by the website that prevent embedding.</p>
+                    ${requiresAuth ? `
+                        <div style="margin: 15px 0; padding: 15px; background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.3); border-radius: 4px;">
+                            <p style="color: #ffc107; margin: 0;">⚠️ This appears to be a dashboard or app that requires authentication.</p>
+                            <p style="color: #ffc107; margin: 5px 0 0 0; font-size: 12px;">Even if embedding was possible, you would need to log in within the iframe.</p>
+                        </div>
+                    ` : ''}
                     <br>
-                    <p><strong>Alternative options:</strong></p>
+                    <p><strong>Why this happens:</strong></p>
+                    <ul style="text-align: left; display: inline-block; margin: 10px 0; font-size: 14px;">
+                        <li>Security headers (X-Frame-Options, CSP) prevent embedding</li>
+                        <li>Modern web apps use JavaScript that won't work in fetch mode</li>
+                        <li>Authentication cookies are restricted in iframes</li>
+                    </ul>
+                    <br>
+                    <p><strong>Recommended alternatives:</strong></p>
                     <ul style="text-align: left; display: inline-block; margin: 10px 0;">
                         <li>Open the site in a regular browser tab</li>
-                        <li>Check if the site offers an embeddable version</li>
-                        <li>Use a local development server instead</li>
+                        <li>Use the site's API if available</li>
+                        <li>For local development, use a proxy server</li>
                     </ul>
                     <br>
                     <button onclick="vscode.postMessage({type: 'openExternal', url: '${url}'})" 
-                            style="padding: 10px 20px; background: #0e639c; color: white; border: none; cursor: pointer;">
+                            style="padding: 10px 20px; background: #0e639c; color: white; border: none; cursor: pointer; margin: 5px;">
                         Open in Browser
+                    </button>
+                    ${!isDashboard ? `
+                        <button onclick="tryFetchMode('${url}')" 
+                                style="padding: 10px 20px; background: #6c757d; color: white; border: none; cursor: pointer; margin: 5px;">
+                            Try Fetch Mode (Limited)
+                        </button>
+                    ` : ''}
+                </div>
+            `);
+            
+            // Debug: Check element visibility after showing error
+            setTimeout(() => {
+                console.log('=== After showing error message ===');
+                testShowElements();
+            }, 100);
+        }
+        
+        // Try to fetch and display content (limited functionality)
+        window.tryFetchMode = function(url) {
+            console.log('Trying fetch mode for:', url);
+            const loading = document.getElementById('loading');
+            const errorMessage = document.getElementById('error-message');
+            const iframe = document.getElementById('dashboard-iframe');
+            const fetchContainer = document.getElementById('fetch-container');
+            
+            // Hide iframe and error, show loading
+            iframe.style.display = 'none';
+            errorMessage.style.display = 'none';
+            loading.style.display = 'block';
+            loading.textContent = 'Fetching content...';
+            
+            // Note: This will likely fail due to CORS
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    console.log('✅ Content fetched');
+                    loading.style.display = 'none';
+                    fetchContainer.style.display = 'block';
+                    fetchContainer.innerHTML = `
+                        <div style="padding: 10px; background: #f0f0f0; border-bottom: 1px solid #ccc;">
+                            <strong>Fetch Mode:</strong> ${url} 
+                            <button onclick="document.getElementById('fetch-container').style.display='none'; showDefaultDashboard();" 
+                                    style="float: right;">Close</button>
+                        </div>
+                        <div style="padding: 20px;">
+                            ${html}
+                        </div>
+                    `;
+                })
+                .catch(error => {
+                    console.error('Fetch failed:', error);
+                    loading.style.display = 'none';
+                    showError(`
+                        <div style="text-align: center; padding: 20px;">
+                            <h3 style="color: #e74c3c;">Fetch Mode Failed</h3>
+                            <p>Could not fetch content due to CORS restrictions.</p>
+                            <p style="margin-top: 10px; font-size: 12px; color: #666;">
+                                ${error.message}
+                            </p>
+                            <br>
+                            <p>Most external websites block cross-origin requests for security reasons.</p>
+                            <button onclick="vscode.postMessage({type: 'openExternal', url: '${url}'})" 
+                                    style="padding: 10px 20px; background: #0e639c; color: white; border: none; cursor: pointer;">
+                                Open in Browser
+                            </button>
+                        </div>
+                    `);
+                });
+        };
+        
+        // Check if site is known to block iframe embedding
+        function isKnownBlockedSite(url) {
+            const blockedDomains = [
+                'google.com',
+                'youtube.com',
+                'facebook.com',
+                'twitter.com',
+                'github.com',
+                'cloudflare.com',
+                'aws.amazon.com',
+                'console.cloud.google.com',
+                'portal.azure.com',
+                'vercel.com',
+                'netlify.com',
+                'heroku.com',
+                'digitalocean.com'
+            ];
+            
+            return blockedDomains.some(domain => url.includes(domain));
+        }
+        
+        // Get embeddable URL for known services
+        function getEmbeddableUrl(url) {
+            // YouTube
+            if (url.includes('youtube.com/watch')) {
+                const videoId = url.match(/v=([^&]+)/);
+                if (videoId) {
+                    return `https://www.youtube.com/embed/${videoId[1]}`;
+                }
+            }
+            
+            // Twitter/X - 個別のツイート
+            if (url.match(/twitter\.com\/\w+\/status\/\d+/) || url.match(/x\.com\/\w+\/status\/\d+/)) {
+                // Twitterの埋め込みは複雑なので、公式の埋め込みコードが必要
+                return null; // 代わりに埋め込みコードの取得方法を案内
+            }
+            
+            // Google Maps
+            if (url.includes('google.com/maps')) {
+                // Google Maps embed requires API key, so just suggest
+                return null;
+            }
+            
+            // GitHub Gist
+            if (url.match(/gist\.github\.com\/\w+\/\w+/)) {
+                // Gistは.jsを追加すれば埋め込み可能
+                return url + '.js';
+            }
+            
+            // Add more services as needed
+            return null;
+        }
+        
+        // Show embeddable alternative
+        function showEmbeddableAlternative(originalUrl, embeddableUrl) {
+            showError(`
+                <div style="text-align: center; padding: 20px;">
+                    <h3 style="color: #f39c12;">Embeddable Version Available</h3>
+                    <p>The website <strong>${originalUrl}</strong> blocks direct embedding.</p>
+                    <p style="margin-top: 10px;">However, an embeddable version is available!</p>
+                    <br>
+                    <button onclick="loadHttpUrl('${embeddableUrl}')" 
+                            style="padding: 10px 20px; background: #28a745; color: white; border: none; cursor: pointer; margin: 5px;">
+                        Load Embeddable Version
+                    </button>
+                    <button onclick="vscode.postMessage({type: 'openExternal', url: '${originalUrl}'})" 
+                            style="padding: 10px 20px; background: #0e639c; color: white; border: none; cursor: pointer; margin: 5px;">
+                        Open Original in Browser
                     </button>
                 </div>
             `);
@@ -1861,10 +2037,17 @@
                         } catch (e) {
                             handleHttpsLocalhostError(url);
                         }
-                    } else if (url.includes('google.com') || url.includes('youtube.com') || url.includes('facebook.com')) {
+                    } else if (isKnownBlockedSite(url)) {
                         // Known sites that block iframe embedding
                         console.log('⚠️ Known site that blocks iframe embedding');
-                        handleExternalHttpsError(url);
+                        
+                        // Check if we can suggest embeddable alternatives
+                        const embeddableUrl = getEmbeddableUrl(url);
+                        if (embeddableUrl) {
+                            showEmbeddableAlternative(url, embeddableUrl);
+                        } else {
+                            handleExternalHttpsError(url);
+                        }
                     } else {
                         // Try to check if content is actually visible
                         try {

@@ -1772,9 +1772,51 @@
                         <span style="font-size:12px; color:#aaa;">(Specify absolute path. On Mac, use "file:///" + full path)</span>
                     </div>
                 </details>
+                <button id="use-theme-btn" style="margin-top: 12px; padding: 8px 16px; background: var(--vscode-button-background, #0e639c); color: var(--vscode-button-foreground, white); border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                    Use this theme
+                </button>
             </div>
             `;
             document.getElementById('dashboard-annotation').innerHTML = html;
+            
+            // Add click handler for the use theme button
+            setTimeout(() => {
+                const useThemeBtn = document.getElementById('use-theme-btn');
+                if (useThemeBtn) {
+                    useThemeBtn.addEventListener('click', () => {
+                        // Get the entire HTML content
+                        const htmlContent = document.documentElement.outerHTML;
+                        
+                        // Copy to clipboard
+                        navigator.clipboard.writeText(htmlContent).then(() => {
+                            // Show success feedback
+                            const originalText = useThemeBtn.textContent;
+                            useThemeBtn.textContent = '✓ Copied!';
+                            useThemeBtn.style.background = 'var(--vscode-button-secondaryBackground, #28a745)';
+                            
+                            // Reset button after 2 seconds
+                            setTimeout(() => {
+                                useThemeBtn.textContent = originalText;
+                                useThemeBtn.style.background = 'var(--vscode-button-background, #0e639c)';
+                            }, 2000);
+                        }).catch(err => {
+                            console.error('Failed to copy HTML:', err);
+                            useThemeBtn.textContent = '❌ Copy failed';
+                            setTimeout(() => {
+                                useThemeBtn.textContent = 'Use this theme';
+                            }, 2000);
+                        });
+                    });
+                    
+                    // Add hover effect
+                    useThemeBtn.addEventListener('mouseenter', () => {
+                        useThemeBtn.style.opacity = '0.9';
+                    });
+                    useThemeBtn.addEventListener('mouseleave', () => {
+                        useThemeBtn.style.opacity = '1';
+                    });
+                }
+            }, 100);
         }
         setDashboardAnnotation();
         

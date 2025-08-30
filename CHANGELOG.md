@@ -5,6 +5,13 @@ All notable changes to the "vscode-web-panel" extension will be documented in th
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-01-30
+
+### Added
+- "Use this theme" button below demo dashboard notice
+- Ability to copy current HTML theme with clipboard API
+- Visual feedback when theme is copied successfully
+
 ## [0.3.0] - 2025-01-10
 
 ### Added

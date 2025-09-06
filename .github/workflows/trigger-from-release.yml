@@ -8,13 +8,12 @@ on:
     secrets:
       PPN_PAGE_TRIGGER_TOKEN:
         required: true
+  workflow_dispatch:
   release:
     types: [published]
   push:
     tags:
       - 'v*'
-    paths:
-      - 'package.json'
 
 jobs:
   notify:

@@ -4,6 +4,10 @@
 name: Notify ppn-page on Release
 
 on:
+  workflow_call:
+    secrets:
+      PPN_PAGE_TRIGGER_TOKEN:
+        required: true
   release:
     types: [published]
   push:

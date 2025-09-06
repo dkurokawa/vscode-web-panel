@@ -11,26 +11,7 @@ on:
         type: string
 
 jobs:
-  trigger:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger ppn-page update
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.PPN_PAGE_TRIGGER_TOKEN }}
-          script: |
-            await github.rest.repos.createDispatchEvent({
-              owner: 'dkurokawa',
-              repo: 'ppn-page',
-              event_type: 'project-update',
-              client_payload: {
-                repository: 'vscode-web-panel',
-                version: '${{ inputs.version }}'
-              }
-            });
-            
-      - name: Report completion
-        run: |
-          echo "✅ Successfully triggered ppn-page update"
-          echo "Repository: vscode-web-panel"
-          echo "Version: ${{ inputs.version }}"
+  notify-ppn-page:
+    uses: ./.github/workflows/trigger-from-release.yml
+    secrets:
+      PPN_PAGE_TRIGGER_TOKEN: ${{ secrets.PPN_PAGE_TRIGGER_TOKEN }}

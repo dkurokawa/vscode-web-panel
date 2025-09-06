@@ -1,0 +1,36 @@
+# ppn-page更新を手動でトリガーするためのワークフロー
+name: Manual Trigger ppn-page Update
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to report (e.g., v0.4.0)'
+        required: true
+        default: 'v0.4.0'
+        type: string
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger ppn-page update
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PPN_PAGE_TRIGGER_TOKEN }}
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: 'dkurokawa',
+              repo: 'ppn-page',
+              event_type: 'project-update',
+              client_payload: {
+                repository: 'vscode-web-panel',
+                version: '${{ inputs.version }}'
+              }
+            });
+            
+      - name: Report completion
+        run: |
+          echo "✅ Successfully triggered ppn-page update"
+          echo "Repository: vscode-web-panel"
+          echo "Version: ${{ inputs.version }}"

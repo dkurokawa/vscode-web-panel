@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 言語設定 / Language Settings
+
+このプロジェクトでの会話は常に日本語で行ってください。
+All conversations in this project should be conducted in Japanese.
+
 ## VS Code Web Panel Extension
 
 This is a VS Code extension that displays web dashboards directly within VS Code using webview panels or sidebar views. The extension allows users to embed any web-based dashboard (Grafana, Kibana, custom dashboards, etc.) into their development environment.

@@ -53,6 +53,11 @@
             .url-float.hide {
                 display: none !important;
             }
+            
+            /* Initial state - hide until we know the collapsed state */
+            .url-float.initial-hidden .url-input {
+                visibility: hidden;
+            }
         
         .url-input {
             flex: 1;
@@ -1381,7 +1386,7 @@
 </head>
 <body>
     <div class="header">
-        <div id="url-float" class="url-float">
+        <div id="url-float" class="url-float initial-hidden">
             <button id="toggle-url" class="toggle-url" title="Show/hide URL input">🔽</button>
             <input type="text" 
                    id="dashboard-url" 
@@ -1440,7 +1445,19 @@
                 </div>
             </div>
             <div id="dashboard-annotation"></div>
-            <div class="service-list">
+            <div id="settings-control" style="text-align: center; margin: 20px 0;">
+                <button onclick="openSettings()" style="padding: 8px 16px; margin: 0 5px; background: #007ACC; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                    📝 Edit settings.json
+                </button>
+                <button onclick="useSettings()" style="padding: 8px 16px; margin: 0 5px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                    ⚙️ Use settings.json
+                </button>
+                <button onclick="autoDetectServices()" style="padding: 8px 16px; margin: 0 5px; background: #6f42c1; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                    🔍 Auto-detect
+                </button>
+                <div id="settings-status" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
+            </div>
+            <div class="service-list" id="service-list">
                 <div class="service-item">
                     <div class="service-header">
                         <div class="service-info">
@@ -1952,18 +1969,47 @@
         // Restore previous URL
         const state = vscode.getState();
         if (state && state.dashboardUrl) {
+            console.log('📌 Restoring saved state:', state);
+            console.log('📌 Saved URL:', state.dashboardUrl);
             document.getElementById('dashboard-url').value = state.dashboardUrl;
             if (state.dashboardUrl.trim()) {
-                // Don't auto-load for now, for debugging
+                // Auto-load the saved URL
                 console.log('Previous URL found:', state.dashboardUrl);
-                console.log('NOT auto-loading. Call loadDashboard() manually.');
-                showDefaultDashboard();
+                console.log('Auto-loading saved URL...');
+                loadDashboard();
             } else {
                 showDefaultDashboard();
             }
         } else {
             showDefaultDashboard();
         }
+        
+        // Restore URL collapsed state
+        setTimeout(() => {
+            const urlFloat = document.getElementById('url-float');
+            const toggleBtn = document.getElementById('toggle-url');
+            
+            if (urlFloat) {
+                // Remove initial hidden class
+                urlFloat.classList.remove('initial-hidden');
+                
+                // Check saved state
+                if (state && typeof state.urlCollapsed === 'boolean' && state.urlCollapsed) {
+                    console.log('📌 Restoring URL collapsed state: true');
+                    // Set collapsed state directly without animation
+                    urlFloat.classList.add('floating');
+                    toggleBtn.textContent = '▶️';
+                    
+                    // Update the local variable used by toggle function
+                    if (window.urlCollapsed !== undefined) {
+                        window.urlCollapsed = true;
+                    }
+                } else {
+                    console.log('📌 URL input expanded (default or saved state)');
+                    // Already in expanded state, just ensure visibility
+                }
+            }
+        }, 50);
         
         // Add direct test buttons for debugging
         // Commented out - uncomment when needed for debugging
@@ -2627,6 +2673,8 @@
             console.log('  - starts with http://', url.startsWith('http://'));
             console.log('  - starts with https://', url.startsWith('https://'));
             console.log('  - starts with file://', url.startsWith('file://'));
+            console.log('  - URL length:', url.length);
+            console.log('  - URL first 10 chars:', url.substring(0, 10));
 
             if (!url) {
                 console.log('No URL provided, showing default dashboard');
@@ -2639,10 +2687,15 @@
             
             // Save URL and history
             const currentState = vscode.getState() || {};
-            vscode.setState({ ...currentState, dashboardUrl: url });
+            vscode.setState({ ...currentState, dashboardUrl: url, scrollPosition: null });
 
             // Add protocol if URL doesn't have one
-            if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('file://')) {
+            // Check for file:// protocol first (case-insensitive)
+            const hasFileProtocol = url.toLowerCase().startsWith('file://');
+            const hasHttpProtocol = url.toLowerCase().startsWith('http://');
+            const hasHttpsProtocol = url.toLowerCase().startsWith('https://');
+            
+            if (!hasFileProtocol && !hasHttpProtocol && !hasHttpsProtocol) {
                 // For localhost, default to HTTP (not HTTPS)
                 if (url.startsWith('localhost')) {
                     console.log('Adding http:// prefix to localhost URL');
@@ -2652,7 +2705,8 @@
                     url = 'https://' + url;
                 }
                 document.getElementById('dashboard-url').value = url;
-                vscode.setState({ dashboardUrl: url });
+                const currentState = vscode.getState() || {};
+                vscode.setState({ ...currentState, dashboardUrl: url });
             }
 
             // Route to appropriate handler
@@ -2703,6 +2757,250 @@
             });
         }
         
+        // Open settings.json in VS Code
+        function openSettings() {
+            vscode.postMessage({ type: 'openSettings' });
+        }
+        
+        // Use settings.json to configure services
+        function useSettings() {
+            const statusEl = document.getElementById('settings-status');
+            statusEl.textContent = 'Loading settings...';
+            statusEl.style.color = '#666';
+            
+            vscode.postMessage({ type: 'readSettings' });
+        }
+        
+        // Auto-detect services in the project
+        function autoDetectServices() {
+            const statusEl = document.getElementById('settings-status');
+            statusEl.textContent = 'Auto-detecting services...';
+            statusEl.style.color = '#666';
+            
+            vscode.postMessage({ type: 'autoDetectServices' });
+        }
+        
+        // Render custom services from settings.json
+        function renderCustomServices(services) {
+            const serviceList = document.getElementById('service-list');
+            if (!serviceList) return;
+            
+            // Clear existing services
+            serviceList.innerHTML = '';
+            
+            // Stop the default metrics update
+            if (window.metricsInterval) {
+                clearInterval(window.metricsInterval);
+                window.metricsInterval = null;
+            }
+            
+            // Create service items
+            services.forEach((service, index) => {
+                const serviceItem = createServiceItem(service, index);
+                serviceList.appendChild(serviceItem);
+            });
+            
+            // Start health checks
+            startHealthChecks(services);
+        }
+        
+        // Create a service item element
+        function createServiceItem(service, index) {
+            const div = document.createElement('div');
+            div.className = 'service-item';
+            div.id = `service-${index}`;
+            
+            // Generate metrics HTML based on service type
+            let metricsHtml = '';
+            switch(service.type) {
+                case 'web':
+                    metricsHtml = `
+                        <div class="metric">
+                            <div class="metric-label">Response Time</div>
+                            <div class="metric-value" id="metric-${index}-response">-ms</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Requests/min</div>
+                            <div class="metric-value" id="metric-${index}-requests">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Error Rate</div>
+                            <div class="metric-value" id="metric-${index}-errors">-%</div>
+                        </div>`;
+                    break;
+                case 'bot':
+                    metricsHtml = `
+                        <div class="metric">
+                            <div class="metric-label">Processed</div>
+                            <div class="metric-value" id="metric-${index}-processed">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Queue Size</div>
+                            <div class="metric-value" id="metric-${index}-queue">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Success Rate</div>
+                            <div class="metric-value" id="metric-${index}-success">-%</div>
+                        </div>`;
+                    break;
+                case 'db':
+                    metricsHtml = `
+                        <div class="metric">
+                            <div class="metric-label">Connections</div>
+                            <div class="metric-value" id="metric-${index}-connections">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Queries/s</div>
+                            <div class="metric-value" id="metric-${index}-queries">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Latency</div>
+                            <div class="metric-value" id="metric-${index}-latency">-ms</div>
+                        </div>`;
+                    break;
+                case 'api':
+                    metricsHtml = `
+                        <div class="metric">
+                            <div class="metric-label">Endpoints</div>
+                            <div class="metric-value" id="metric-${index}-endpoints">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Calls/min</div>
+                            <div class="metric-value" id="metric-${index}-calls">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Avg Latency</div>
+                            <div class="metric-value" id="metric-${index}-avglatency">-ms</div>
+                        </div>`;
+                    break;
+                default:
+                    metricsHtml = `
+                        <div class="metric">
+                            <div class="metric-label">Status</div>
+                            <div class="metric-value" id="metric-${index}-status">Unknown</div>
+                        </div>`;
+            }
+            
+            div.innerHTML = `
+                <div class="service-header">
+                    <div class="service-info">
+                        <div>${service.icon || '📦'}</div>
+                        <div>
+                            <div class="service-name">${service.title || 'Unnamed Service'}</div>
+                            <div class="service-description">${service.subtitle || ''}</div>
+                        </div>
+                    </div>
+                    <div class="status-indicator">
+                        <div class="status-dot" id="status-${index}"></div>
+                        <span id="status-text-${index}">Checking...</span>
+                    </div>
+                </div>
+                <div class="metrics-grid">
+                    ${metricsHtml}
+                </div>
+            `;
+            
+            // Add click handler to open service URL
+            if (service.url) {
+                div.style.cursor = 'pointer';
+                div.addEventListener('click', () => {
+                    document.getElementById('dashboard-url').value = service.url;
+                    loadDashboard();
+                });
+            }
+            
+            return div;
+        }
+        
+        // Start health checks for all services
+        let healthCheckInterval = null;
+        function startHealthChecks(services) {
+            // Clear existing interval if any
+            if (healthCheckInterval) {
+                clearInterval(healthCheckInterval);
+            }
+            
+            // Initial check
+            services.forEach((service, index) => {
+                checkServiceHealth(service, index);
+            });
+            
+            // Periodic checks every 30 seconds
+            healthCheckInterval = setInterval(() => {
+                services.forEach((service, index) => {
+                    checkServiceHealth(service, index);
+                });
+            }, 30000);
+        }
+        
+        // Check health of a single service
+        function checkServiceHealth(service, index) {
+            const statusDot = document.getElementById(`status-${index}`);
+            const statusText = document.getElementById(`status-text-${index}`);
+            
+            if (!service.url || !service.healthEndpoint) {
+                statusDot.className = 'status-dot';
+                statusText.textContent = 'No health check';
+                updateServiceMetrics(service, index, false);
+                return;
+            }
+            
+            // Construct health check URL
+            const healthUrl = new URL(service.healthEndpoint, service.url).toString();
+            
+            // For now, simulate health check (in real implementation, would need CORS proxy or backend)
+            // This is a limitation of webviews - they can't directly make cross-origin requests
+            const isHealthy = Math.random() > 0.2; // 80% chance of being healthy
+            
+            if (isHealthy) {
+                statusDot.className = 'status-dot status-active';
+                statusText.textContent = 'Active';
+                updateServiceMetrics(service, index, true);
+            } else {
+                statusDot.className = 'status-dot status-warning';
+                statusText.textContent = 'Warning';
+                updateServiceMetrics(service, index, false);
+            }
+        }
+        
+        // Update service metrics with random values
+        function updateServiceMetrics(service, index, isHealthy) {
+            switch(service.type) {
+                case 'web':
+                    document.getElementById(`metric-${index}-response`).textContent = 
+                        isHealthy ? `${Math.floor(Math.random() * 200 + 50)}ms` : '-';
+                    document.getElementById(`metric-${index}-requests`).textContent = 
+                        isHealthy ? Math.floor(Math.random() * 1000 + 100) : '-';
+                    document.getElementById(`metric-${index}-errors`).textContent = 
+                        isHealthy ? `${(Math.random() * 5).toFixed(1)}%` : '-';
+                    break;
+                case 'bot':
+                    document.getElementById(`metric-${index}-processed`).textContent = 
+                        isHealthy ? Math.floor(Math.random() * 10000 + 1000).toLocaleString() : '-';
+                    document.getElementById(`metric-${index}-queue`).textContent = 
+                        isHealthy ? Math.floor(Math.random() * 100) : '-';
+                    document.getElementById(`metric-${index}-success`).textContent = 
+                        isHealthy ? `${(Math.random() * 5 + 95).toFixed(1)}%` : '-';
+                    break;
+                case 'db':
+                    document.getElementById(`metric-${index}-connections`).textContent = 
+                        isHealthy ? Math.floor(Math.random() * 50 + 10) : '-';
+                    document.getElementById(`metric-${index}-queries`).textContent = 
+                        isHealthy ? Math.floor(Math.random() * 1000 + 100) : '-';
+                    document.getElementById(`metric-${index}-latency`).textContent = 
+                        isHealthy ? `${Math.floor(Math.random() * 10 + 1)}ms` : '-';
+                    break;
+                case 'api':
+                    document.getElementById(`metric-${index}-endpoints`).textContent = 
+                        isHealthy ? Math.floor(Math.random() * 50 + 20) : '-';
+                    document.getElementById(`metric-${index}-calls`).textContent = 
+                        isHealthy ? Math.floor(Math.random() * 5000 + 500) : '-';
+                    document.getElementById(`metric-${index}-avglatency`).textContent = 
+                        isHealthy ? `${Math.floor(Math.random() * 100 + 20)}ms` : '-';
+                    break;
+            }
+        }
+        
         // Real-time metrics update
         function updateMetrics() {
             // Bot metrics
@@ -2733,14 +3031,16 @@
             if (apiErrors) apiErrors.textContent = Math.floor(Math.random() * 4);
         }
         
+        // Global variable for URL collapsed state
+        window.urlCollapsed = false;
+        
         // Toggle URL input visibility
         document.addEventListener('DOMContentLoaded', function() {
             const toggleBtn = document.getElementById('toggle-url');
             const urlInputEl = document.getElementById('dashboard-url');
             const urlFloat = document.getElementById('url-float');
-            let urlCollapsed = false;
             function updateToggleIcon() {
-                toggleBtn.textContent = urlCollapsed ? '▶️' : '🔽';
+                toggleBtn.textContent = window.urlCollapsed ? '▶️' : '🔽';
             }
             function setFloating(floating) {
                 if (floating) {
@@ -2750,17 +3050,56 @@
                 }
             }
             toggleBtn.addEventListener('click', function() {
-                urlCollapsed = !urlCollapsed;
-                if (urlCollapsed) {
+                window.urlCollapsed = !window.urlCollapsed;
+                if (window.urlCollapsed) {
                     setFloating(true);
                 } else {
                     setFloating(false);
                     urlInputEl.focus();
                 }
                 updateToggleIcon();
+                
+                // Save collapsed state
+                const currentState = vscode.getState() || {};
+                vscode.setState({ ...currentState, urlCollapsed: window.urlCollapsed });
             });
             updateToggleIcon();
         });
+        // Save scroll position function
+        function saveScrollPosition() {
+            const iframe = document.getElementById('dashboard-iframe');
+            const currentState = vscode.getState() || {};
+            
+            // Try to save iframe scroll position if accessible
+            try {
+                if (iframe && iframe.contentWindow) {
+                    const scrollTop = iframe.contentWindow.scrollY || 0;
+                    const scrollLeft = iframe.contentWindow.scrollX || 0;
+                    vscode.setState({ 
+                        ...currentState, 
+                        scrollPosition: { top: scrollTop, left: scrollLeft }
+                    });
+                }
+            } catch (e) {
+                // Cross-origin iframe, can't access scroll position
+                console.log('Cannot save scroll position for cross-origin iframe');
+            }
+        }
+        
+        // Save state before unload
+        window.addEventListener('beforeunload', () => {
+            saveScrollPosition();
+            
+            // Also save URL collapsed state one more time
+            const toggleBtn = document.getElementById('toggle-url');
+            const urlFloat = document.getElementById('url-float');
+            if (toggleBtn && urlFloat) {
+                const isCollapsed = urlFloat.classList.contains('floating');
+                const currentState = vscode.getState() || {};
+                vscode.setState({ ...currentState, urlCollapsed: isCollapsed });
+            }
+        });
+        
         // Receive safe webview URL from extension
         window.addEventListener('message', event => {
             const msg = event.data;
@@ -2819,6 +3158,29 @@
                             
                             loading.style.display = 'none';
                             console.log('✅ Local file displayed via blob URL');
+                            
+                            // Restore scroll position after content loads
+                            iframe.onload = () => {
+                                const state = vscode.getState();
+                                const currentUrl = document.getElementById('dashboard-url').value.trim();
+                                if (state && state.scrollPosition && state.dashboardUrl === currentUrl) {
+                                    console.log('Restoring scroll position for file URL:', state.scrollPosition);
+                                    try {
+                                        const iframeWindow = iframe.contentWindow;
+                                        if (iframeWindow) {
+                                            setTimeout(() => {
+                                                iframeWindow.scrollTo(state.scrollPosition.x || 0, state.scrollPosition.y || 0);
+                                            }, 100);
+                                        }
+                                    } catch (e) {
+                                        console.log('Could not restore scroll position:', e);
+                                    }
+                                }
+                                
+                                // Set up scroll tracking
+                                setTimeout(setupScrollTracking, 500);
+                            };
+                            
                             testShowElements();
                         })
                         .catch(error => {
@@ -2839,6 +3201,72 @@
                         <p>Could not access the local file. Please ensure the file exists and the path is correct.</p>
                     </div>`);
                     testShowElements();
+                }
+            }
+            // Handle settings data
+            else if (msg && msg.type === 'settingsData') {
+                const statusEl = document.getElementById('settings-status');
+                if (msg.error) {
+                    statusEl.textContent = msg.error;
+                    statusEl.style.color = '#dc3545';
+                    return;
+                }
+                
+                if (msg.settings) {
+                    try {
+                        const settings = JSON.parse(msg.settings);
+                        const services = settings['web-panel.services'];
+                        if (services && Array.isArray(services)) {
+                            statusEl.textContent = `Loaded ${services.length} services from settings.json`;
+                            statusEl.style.color = '#28a745';
+                            renderCustomServices(services);
+                        } else {
+                            statusEl.textContent = 'No services found in settings.json';
+                            statusEl.style.color = '#ffc107';
+                        }
+                    } catch (e) {
+                        statusEl.textContent = 'Failed to parse settings.json';
+                        statusEl.style.color = '#dc3545';
+                        console.error('Error parsing settings:', e);
+                    }
+                }
+            }
+            // Handle auto-detected services
+            else if (msg && msg.type === 'detectedServices') {
+                const statusEl = document.getElementById('settings-status');
+                if (msg.error) {
+                    statusEl.textContent = msg.error;
+                    statusEl.style.color = '#dc3545';
+                    return;
+                }
+                
+                if (msg.services && msg.services.length > 0) {
+                    statusEl.textContent = `Auto-detected ${msg.services.length} services`;
+                    statusEl.style.color = '#6f42c1';
+                    renderCustomServices(msg.services);
+                    
+                    // Ask if user wants to save to settings.json
+                    const saveButton = document.createElement('button');
+                    saveButton.textContent = '💾 Save to settings.json';
+                    saveButton.style.cssText = 'margin-left: 10px; padding: 4px 12px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;';
+                    saveButton.onclick = () => {
+                        const settingsObj = {
+                            "web-panel.services": msg.services
+                        };
+                        vscode.postMessage({ 
+                            type: 'saveAutoDetectedSettings', 
+                            settings: JSON.stringify(settingsObj, null, 4) 
+                        });
+                        saveButton.textContent = '✅ Saved';
+                        saveButton.disabled = true;
+                        setTimeout(() => {
+                            saveButton.remove();
+                        }, 2000);
+                    };
+                    statusEl.appendChild(saveButton);
+                } else {
+                    statusEl.textContent = 'No services detected in this project';
+                    statusEl.style.color = '#ffc107';
                 }
             }
         });

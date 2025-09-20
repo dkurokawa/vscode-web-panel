@@ -79,6 +79,138 @@ class DashboardViewProvider implements vscode.WebviewViewProvider {
 					console.error('Error opening external URL:', e);
 				}
 			}
+			// Read settings.json
+			else if (msg && msg.type === 'readSettings') {
+				try {
+					const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+					if (workspaceFolder) {
+						const settingsPath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode', 'settings.json');
+						try {
+							const settingsContent = await vscode.workspace.fs.readFile(settingsPath);
+							const settingsText = Buffer.from(settingsContent).toString('utf8');
+							webviewView.webview.postMessage({ type: 'settingsData', settings: settingsText });
+						} catch (e) {
+							// Settings file doesn't exist
+							webviewView.webview.postMessage({ type: 'settingsData', settings: null, error: 'No settings.json found' });
+						}
+					} else {
+						webviewView.webview.postMessage({ type: 'settingsData', settings: null, error: 'No workspace folder open' });
+					}
+				} catch (e) {
+					console.error('Error reading settings:', e);
+					webviewView.webview.postMessage({ type: 'settingsData', settings: null, error: 'Failed to read settings' });
+				}
+			}
+			// Open settings.json in editor
+			else if (msg && msg.type === 'openSettings') {
+				try {
+					const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+					if (workspaceFolder) {
+						const settingsPath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode', 'settings.json');
+						// Create default settings if file doesn't exist
+						try {
+							await vscode.workspace.fs.stat(settingsPath);
+						} catch {
+							// Create .vscode directory if it doesn't exist
+							const vscodePath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode');
+							try {
+								await vscode.workspace.fs.createDirectory(vscodePath);
+							} catch {}
+							
+							// Create default settings
+							const defaultSettings = {
+								"web-panel.services": [
+									{
+										"icon": "🌐",
+										"title": "My Web Service",
+										"subtitle": "Main application server",
+										"type": "web",
+										"url": "http://localhost:3000",
+										"healthEndpoint": "/health"
+									},
+									{
+										"icon": "🤖",
+										"title": "Bot Service",
+										"subtitle": "Background worker",
+										"type": "bot",
+										"url": "http://localhost:3001",
+										"healthEndpoint": "/health"
+									},
+									{
+										"icon": "🗄️",
+										"title": "Database",
+										"subtitle": "PostgreSQL main database",
+										"type": "db",
+										"url": "http://localhost:5432",
+										"healthEndpoint": "/health"
+									},
+									{
+										"icon": "🔌",
+										"title": "API Gateway",
+										"subtitle": "REST API endpoints",
+										"type": "api",
+										"url": "http://localhost:8080",
+										"healthEndpoint": "/health"
+									}
+								]
+							};
+							const settingsContent = JSON.stringify(defaultSettings, null, 4);
+							await vscode.workspace.fs.writeFile(settingsPath, Buffer.from(settingsContent, 'utf8'));
+						}
+						
+						// Open settings file
+						const document = await vscode.workspace.openTextDocument(settingsPath);
+						await vscode.window.showTextDocument(document);
+					}
+				} catch (e) {
+					console.error('Error opening settings:', e);
+				}
+			}
+			// Auto-detect services
+			else if (msg && msg.type === 'autoDetectServices') {
+				try {
+					const services = await autoDetectServices();
+					webviewView.webview.postMessage({ type: 'detectedServices', services });
+				} catch (e) {
+					console.error('Error auto-detecting services:', e);
+					webviewView.webview.postMessage({ type: 'detectedServices', services: [], error: 'Failed to auto-detect services' });
+				}
+			}
+			// Save auto-detected settings
+			else if (msg && msg.type === 'saveAutoDetectedSettings' && msg.settings) {
+				try {
+					const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+					if (workspaceFolder) {
+						const settingsPath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode', 'settings.json');
+						
+						// Create .vscode directory if it doesn't exist
+						const vscodePath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode');
+						try {
+							await vscode.workspace.fs.createDirectory(vscodePath);
+						} catch {}
+						
+						// Read existing settings if any
+						let existingSettings: any = {};
+						try {
+							const existingContent = await vscode.workspace.fs.readFile(settingsPath);
+							existingSettings = JSON.parse(Buffer.from(existingContent).toString('utf8'));
+						} catch {}
+						
+						// Merge with auto-detected settings
+						const newSettings = JSON.parse(msg.settings);
+						const mergedSettings = { ...existingSettings, ...newSettings };
+						
+						// Write settings
+						const settingsContent = JSON.stringify(mergedSettings, null, 4);
+						await vscode.workspace.fs.writeFile(settingsPath, Buffer.from(settingsContent, 'utf8'));
+						
+						vscode.window.showInformationMessage('Auto-detected services saved to settings.json');
+					}
+				} catch (e) {
+					console.error('Error saving auto-detected settings:', e);
+					vscode.window.showErrorMessage('Failed to save auto-detected settings');
+				}
+			}
 		});
 	}
 
@@ -214,6 +346,138 @@ class DashboardPanel {
 					console.error('Error opening external URL:', e);
 				}
 			}
+			// Read settings.json
+			else if (msg && msg.type === 'readSettings') {
+				try {
+					const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+					if (workspaceFolder) {
+						const settingsPath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode', 'settings.json');
+						try {
+							const settingsContent = await vscode.workspace.fs.readFile(settingsPath);
+							const settingsText = Buffer.from(settingsContent).toString('utf8');
+							webview.postMessage({ type: 'settingsData', settings: settingsText });
+						} catch (e) {
+							// Settings file doesn't exist
+							webview.postMessage({ type: 'settingsData', settings: null, error: 'No settings.json found' });
+						}
+					} else {
+						webview.postMessage({ type: 'settingsData', settings: null, error: 'No workspace folder open' });
+					}
+				} catch (e) {
+					console.error('Error reading settings:', e);
+					webview.postMessage({ type: 'settingsData', settings: null, error: 'Failed to read settings' });
+				}
+			}
+			// Open settings.json in editor
+			else if (msg && msg.type === 'openSettings') {
+				try {
+					const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+					if (workspaceFolder) {
+						const settingsPath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode', 'settings.json');
+						// Create default settings if file doesn't exist
+						try {
+							await vscode.workspace.fs.stat(settingsPath);
+						} catch {
+							// Create .vscode directory if it doesn't exist
+							const vscodePath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode');
+							try {
+								await vscode.workspace.fs.createDirectory(vscodePath);
+							} catch {}
+							
+							// Create default settings
+							const defaultSettings = {
+								"web-panel.services": [
+									{
+										"icon": "🌐",
+										"title": "My Web Service",
+										"subtitle": "Main application server",
+										"type": "web",
+										"url": "http://localhost:3000",
+										"healthEndpoint": "/health"
+									},
+									{
+										"icon": "🤖",
+										"title": "Bot Service",
+										"subtitle": "Background worker",
+										"type": "bot",
+										"url": "http://localhost:3001",
+										"healthEndpoint": "/health"
+									},
+									{
+										"icon": "🗄️",
+										"title": "Database",
+										"subtitle": "PostgreSQL main database",
+										"type": "db",
+										"url": "http://localhost:5432",
+										"healthEndpoint": "/health"
+									},
+									{
+										"icon": "🔌",
+										"title": "API Gateway",
+										"subtitle": "REST API endpoints",
+										"type": "api",
+										"url": "http://localhost:8080",
+										"healthEndpoint": "/health"
+									}
+								]
+							};
+							const settingsContent = JSON.stringify(defaultSettings, null, 4);
+							await vscode.workspace.fs.writeFile(settingsPath, Buffer.from(settingsContent, 'utf8'));
+						}
+						
+						// Open settings file
+						const document = await vscode.workspace.openTextDocument(settingsPath);
+						await vscode.window.showTextDocument(document);
+					}
+				} catch (e) {
+					console.error('Error opening settings:', e);
+				}
+			}
+			// Auto-detect services
+			else if (msg && msg.type === 'autoDetectServices') {
+				try {
+					const services = await autoDetectServices();
+					webview.postMessage({ type: 'detectedServices', services });
+				} catch (e) {
+					console.error('Error auto-detecting services:', e);
+					webview.postMessage({ type: 'detectedServices', services: [], error: 'Failed to auto-detect services' });
+				}
+			}
+			// Save auto-detected settings
+			else if (msg && msg.type === 'saveAutoDetectedSettings' && msg.settings) {
+				try {
+					const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+					if (workspaceFolder) {
+						const settingsPath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode', 'settings.json');
+						
+						// Create .vscode directory if it doesn't exist
+						const vscodePath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode');
+						try {
+							await vscode.workspace.fs.createDirectory(vscodePath);
+						} catch {}
+						
+						// Read existing settings if any
+						let existingSettings: any = {};
+						try {
+							const existingContent = await vscode.workspace.fs.readFile(settingsPath);
+							existingSettings = JSON.parse(Buffer.from(existingContent).toString('utf8'));
+						} catch {}
+						
+						// Merge with auto-detected settings
+						const newSettings = JSON.parse(msg.settings);
+						const mergedSettings = { ...existingSettings, ...newSettings };
+						
+						// Write settings
+						const settingsContent = JSON.stringify(mergedSettings, null, 4);
+						await vscode.workspace.fs.writeFile(settingsPath, Buffer.from(settingsContent, 'utf8'));
+						
+						vscode.window.showInformationMessage('Auto-detected services saved to settings.json');
+					}
+				} catch (e) {
+					console.error('Error saving auto-detected settings:', e);
+					vscode.window.showErrorMessage('Failed to save auto-detected settings');
+				}
+			}
 		});
 	}
 
@@ -236,4 +500,310 @@ class DashboardPanel {
 			.replace('allowExternal: false,', `allowExternal: ${allowExternal},`)
 			.replace('sandboxLevel: \'medium\'', `sandboxLevel: '${sandboxLevel}'`);
 	}
+}
+
+// Auto-detect services in the workspace
+async function autoDetectServices(): Promise<any[]> {
+	const services: any[] = [];
+	const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+	if (!workspaceFolder) {
+		return services;
+	}
+
+	try {
+		// Check if it's a monorepo
+		const isMonorepo = await checkIfMonorepo(workspaceFolder.uri);
+		
+		if (isMonorepo) {
+			// Detect services in monorepo
+			services.push(...await detectMonorepoServices(workspaceFolder.uri));
+		} else {
+			// Detect single service
+			const service = await detectSingleService(workspaceFolder.uri, '');
+			if (service) {
+				services.push(service);
+			}
+		}
+		
+		return services;
+	} catch (e) {
+		console.error('Error in autoDetectServices:', e);
+		return services;
+	}
+}
+
+// Check if the project is a monorepo
+async function checkIfMonorepo(rootUri: vscode.Uri): Promise<boolean> {
+	try {
+		// Check for common monorepo indicators
+		const indicators = [
+			'lerna.json',
+			'pnpm-workspace.yaml',
+			'rush.json',
+			'nx.json',
+			'turbo.json'
+		];
+		
+		for (const indicator of indicators) {
+			try {
+				await vscode.workspace.fs.stat(vscode.Uri.joinPath(rootUri, indicator));
+				return true;
+			} catch {}
+		}
+		
+		// Check for common monorepo directories
+		const dirs = ['packages', 'apps', 'services'];
+		for (const dir of dirs) {
+			try {
+				const dirUri = vscode.Uri.joinPath(rootUri, dir);
+				const dirStat = await vscode.workspace.fs.stat(dirUri);
+				if (dirStat.type === vscode.FileType.Directory) {
+					return true;
+				}
+			} catch {}
+		}
+		
+		// Check if package.json has workspaces
+		try {
+			const packageJson = await readJsonFile(vscode.Uri.joinPath(rootUri, 'package.json'));
+			if (packageJson.workspaces) {
+				return true;
+			}
+		} catch {}
+		
+		return false;
+	} catch {
+		return false;
+	}
+}
+
+// Detect services in a monorepo
+async function detectMonorepoServices(rootUri: vscode.Uri): Promise<any[]> {
+	const services: any[] = [];
+	
+	// Common monorepo directories
+	const monoDirs = ['packages', 'apps', 'services', 'api', 'web'];
+	
+	for (const dir of monoDirs) {
+		try {
+			const dirUri = vscode.Uri.joinPath(rootUri, dir);
+			const entries = await vscode.workspace.fs.readDirectory(dirUri);
+			
+			for (const [name, type] of entries) {
+				if (type === vscode.FileType.Directory) {
+					const service = await detectSingleService(vscode.Uri.joinPath(dirUri, name), name);
+					if (service) {
+						services.push(service);
+					}
+				}
+			}
+		} catch {}
+	}
+	
+	return services;
+}
+
+// Detect a single service
+async function detectSingleService(serviceUri: vscode.Uri, serviceName: string): Promise<any | null> {
+	try {
+		const projectName = serviceName || vscode.workspace.name || 'Service';
+		let type = 'web'; // default
+		let port = 3000; // default
+		let icon = '🌐'; // default
+		
+		// Read .env file for port
+		const envData = await readEnvFile(serviceUri);
+		if (envData.PORT) {
+			port = parseInt(envData.PORT) || port;
+		}
+		
+		// Check package.json
+		try {
+			const packageJson = await readJsonFile(vscode.Uri.joinPath(serviceUri, 'package.json'));
+			
+			// Detect type based on dependencies
+			const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
+			
+			// Framework detection
+			if (deps['next'] || deps['react'] || deps['vue'] || deps['@angular/core'] || deps['svelte']) {
+				type = 'web';
+				icon = '🌐';
+			} else if (deps['express'] || deps['fastify'] || deps['@nestjs/core'] || deps['koa'] || deps['hapi']) {
+				type = 'api';
+				icon = '🔌';
+			} else if (deps['bull'] || deps['bullmq'] || deps['node-cron'] || deps['agenda']) {
+				type = 'bot';
+				icon = '🤖';
+			} else if (deps['typeorm'] || deps['sequelize'] || deps['prisma'] || deps['mongoose']) {
+				// Has ORM but check if it's mainly a DB service
+				if (packageJson.name && packageJson.name.includes('db')) {
+					type = 'db';
+					icon = '🗄️';
+				}
+			}
+			
+			// Override with scripts detection
+			if (packageJson.scripts) {
+				if (packageJson.scripts.dev && packageJson.scripts.dev.includes('next')) {
+					type = 'web';
+					port = envData.PORT || 3000;
+				} else if (packageJson.scripts.start && packageJson.scripts.start.includes('node')) {
+					type = 'api';
+					port = envData.PORT || 3001;
+				}
+			}
+			
+			// Use package name as service name if available
+			if (packageJson.name) {
+				serviceName = packageJson.name.split('/').pop() || serviceName;
+			}
+		} catch {}
+		
+		// Check for other project files
+		try {
+			// Rust project
+			await vscode.workspace.fs.stat(vscode.Uri.joinPath(serviceUri, 'Cargo.toml'));
+			type = 'api';
+			icon = '🦀';
+			port = envData.PORT || 8080;
+		} catch {}
+		
+		try {
+			// Go project
+			await vscode.workspace.fs.stat(vscode.Uri.joinPath(serviceUri, 'go.mod'));
+			type = 'api';
+			icon = '🐹';
+			port = envData.PORT || 8080;
+		} catch {}
+		
+		try {
+			// Python project
+			const pyFiles = ['requirements.txt', 'Pipfile', 'pyproject.toml'];
+			for (const pyFile of pyFiles) {
+				try {
+					await vscode.workspace.fs.stat(vscode.Uri.joinPath(serviceUri, pyFile));
+					type = 'api';
+					icon = '🐍';
+					port = envData.PORT || 5000;
+					break;
+				} catch {}
+			}
+		} catch {}
+		
+		// Check docker-compose.yml for services
+		try {
+			const dockerCompose = await readYamlFile(vscode.Uri.joinPath(serviceUri, 'docker-compose.yml'));
+			if (dockerCompose.services) {
+				// Look for database services
+				for (const [serviceName, config] of Object.entries(dockerCompose.services)) {
+					if (serviceName.includes('postgres') || serviceName.includes('mysql') || serviceName.includes('mongo') || serviceName.includes('redis')) {
+						type = 'db';
+						icon = '🗄️';
+						port = 5432; // Default PostgreSQL port
+					}
+				}
+			}
+		} catch {}
+		
+		// Generate service config
+		return {
+			icon,
+			title: formatServiceName(serviceName || projectName),
+			subtitle: `${type.charAt(0).toUpperCase() + type.slice(1)} service on port ${port}`,
+			type,
+			url: `http://localhost:${port}`,
+			healthEndpoint: '/health'
+		};
+		
+	} catch (e) {
+		console.error('Error detecting service:', e);
+		return null;
+	}
+}
+
+// Read and parse .env file
+async function readEnvFile(uri: vscode.Uri): Promise<any> {
+	const envData: any = {};
+	
+	try {
+		const envPath = vscode.Uri.joinPath(uri, '.env');
+		const content = await vscode.workspace.fs.readFile(envPath);
+		const lines = Buffer.from(content).toString('utf8').split('\n');
+		
+		for (const line of lines) {
+			const trimmed = line.trim();
+			if (trimmed && !trimmed.startsWith('#')) {
+				const [key, value] = trimmed.split('=');
+				if (key && value) {
+					envData[key.trim()] = value.trim().replace(/["']/g, '');
+				}
+			}
+		}
+	} catch {}
+	
+	// Also check .env.local
+	try {
+		const envLocalPath = vscode.Uri.joinPath(uri, '.env.local');
+		const content = await vscode.workspace.fs.readFile(envLocalPath);
+		const lines = Buffer.from(content).toString('utf8').split('\n');
+		
+		for (const line of lines) {
+			const trimmed = line.trim();
+			if (trimmed && !trimmed.startsWith('#')) {
+				const [key, value] = trimmed.split('=');
+				if (key && value) {
+					envData[key.trim()] = value.trim().replace(/["']/g, '');
+				}
+			}
+		}
+	} catch {}
+	
+	return envData;
+}
+
+// Read and parse JSON file
+async function readJsonFile(uri: vscode.Uri): Promise<any> {
+	const content = await vscode.workspace.fs.readFile(uri);
+	return JSON.parse(Buffer.from(content).toString('utf8'));
+}
+
+// Read and parse YAML file (simple implementation)
+async function readYamlFile(uri: vscode.Uri): Promise<any> {
+	const content = await vscode.workspace.fs.readFile(uri);
+	const text = Buffer.from(content).toString('utf8');
+	
+	// Very basic YAML parsing for docker-compose
+	// This is not a full YAML parser but works for simple cases
+	const result: any = {};
+	const lines = text.split('\n');
+	let currentSection: string | null = null;
+	let currentService: string | null = null;
+	
+	for (const line of lines) {
+		const trimmed = line.trim();
+		if (trimmed === 'services:') {
+			currentSection = 'services';
+			result.services = {};
+		} else if (currentSection === 'services' && trimmed && !trimmed.startsWith('-')) {
+			if (line.match(/^\s{2}\w+:/)) {
+				currentService = trimmed.replace(':', '');
+				result.services[currentService] = {};
+			}
+		}
+	}
+	
+	return result;
+}
+
+// Format service name for display
+function formatServiceName(name: string): string {
+	// Remove common prefixes
+	name = name.replace(/^@[\w-]+\//, ''); // Remove npm scope
+	
+	// Convert kebab-case or snake_case to Title Case
+	return name
+		.replace(/[-_]/g, ' ')
+		.split(' ')
+		.map(word => word.charAt(0).toUpperCase() + word.slice(1))
+		.join(' ');
 }

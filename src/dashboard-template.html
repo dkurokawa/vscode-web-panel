@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src *; frame-src * data: blob:; img-src * data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; connect-src *; media-src *; font-src *;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; frame-src * data: blob:; img-src * data: blob:; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src *; media-src *; font-src *;">
     <title>Dashboard Monitor</title>
     <style>
         * {
@@ -2038,25 +2038,6 @@
                 }
             }
         }, 50);
-        
-        // Add direct test buttons for debugging
-        // Commented out - uncomment when needed for debugging
-        /*
-        setTimeout(() => {
-            const debugBtns = document.createElement('div');
-            debugBtns.style.cssText = 'position: fixed; bottom: 10px; right: 10px; z-index: 10000; background: #333; padding: 10px; border: 1px solid #666;';
-            debugBtns.innerHTML = `
-                <button onclick="loadFileUrl('file:///Users/kurokawadaisuke/projects/ppn-page/mini-panel.html')" style="margin: 2px;">Test File URL</button><br>
-                <button onclick="loadHttpUrl('https://google.com')" style="margin: 2px;">Test Google</button><br>
-                <button onclick="testShowElements()" style="margin: 2px;">Show Elements</button><br>
-                <button onclick="checkIframeContent()" style="margin: 2px;">Check iframe</button><br>
-                <button onclick="showTestContent()" style="margin: 2px;">Test Content</button><br>
-                <button onclick="debugIframeSrc()" style="margin: 2px;">Debug Src</button><br>
-                <button onclick="testFetchFile()" style="margin: 2px;">Test Fetch</button>
-            `;
-            document.body.appendChild(debugBtns);
-        }, 1000);
-        */
         
         // Check iframe content
         window.checkIframeContent = function() {

@@ -1,4 +1,4 @@
-# VS Code Web Panel Extension リリースワークフロー
+# Release workflow for the VS Code Web Panel extension
 name: Release VS Code Extension
 
 on:
@@ -59,11 +59,3 @@ jobs:
           asset_path: ./vscode-web-panel-*.vsix
           asset_name: vscode-web-panel-${{ github.ref }}.vsix
           asset_content_type: application/zip
-          
-          
-  # ppn-pageへの通知（trigger-from-release.ymlを呼び出し）
-  notify-ppn-page:
-    needs: release
-    uses: ./.github/workflows/trigger-from-release.yml
-    secrets:
-      PPN_PAGE_TRIGGER_TOKEN: ${{ secrets.PPN_PAGE_TRIGGER_TOKEN }}

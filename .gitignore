@@ -7,3 +7,7 @@ tmp
 .instruction.txt
 .instruction.html
 _refs
+.DS_Store
+.claude/
+CLAUDE.md
+*.bak

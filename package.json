@@ -50,7 +50,7 @@
         },
         "web-panel.navigation.allowExternal": {
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "Allow navigation to external domains (only works in iframe mode)"
         },
         "web-panel.security.sandboxLevel": {
@@ -60,7 +60,7 @@
             "medium",
             "relaxed"
           ],
-          "default": "relaxed",
+          "default": "medium",
           "description": "Sandbox restrictions for iframe mode. Strict: minimal permissions, Medium: balanced, Relaxed: most features enabled"
         }
       }

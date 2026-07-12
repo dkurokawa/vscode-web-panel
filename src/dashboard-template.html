@@ -244,13 +244,40 @@
             height: 28px;
             width: 28px;
         }
-        
+
         .url-float.floating .toggle-url {
             margin-right: 0;
         }
-        
+
         .toggle-url:hover {
             color: var(--vscode-button-hoverBackground, #1177bb);
+        }
+
+        .reload-btn {
+            background: transparent;
+            border: none;
+            color: var(--vscode-input-foreground, #cccccc);
+            font-size: 16px;
+            cursor: pointer;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 28px;
+            width: 28px;
+            margin-left: auto;
+        }
+
+        .reload-btn:hover {
+            color: var(--vscode-button-hoverBackground, #1177bb);
+        }
+
+        .url-float.floating .reload-btn {
+            position: fixed;
+            top: 8px;
+            right: 8px;
+            z-index: 1000;
+            margin-left: 0;
         }
         
         /* Details element styling */
@@ -1394,6 +1421,7 @@
                    placeholder="https://example.com/dashboard"
                    autocomplete="off">
             <div id="url-history-dropdown" class="url-history-dropdown" style="display: none;"></div>
+            <button id="reload-btn" class="reload-btn" title="Reload page">🔄</button>
             <!-- Debug button - Uncomment when needed -->
             <!-- <button onclick="showDebug()" style="margin-left: 5px; padding: 4px 8px; cursor: pointer;" title="Show debug console">🐛</button> -->
             <!-- <button onclick="loadDashboard()" style="margin-left: 5px; padding: 4px 8px; cursor: pointer;" title="Load URL">Go</button> -->
@@ -1877,7 +1905,7 @@
                     return 'allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-top-navigation allow-downloads';
                 case 'medium':
                 default:
-                    return 'allow-scripts allow-same-origin allow-forms allow-popups';
+                    return 'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox';
             }
         }
         
@@ -2752,6 +2780,7 @@
             urlInputEnter.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' || e.keyCode === 13) {
                     e.preventDefault();
+                    hideUrlHistoryDropdown();
                     loadDashboard();
                 }
             });
@@ -3058,12 +3087,25 @@
                     urlInputEl.focus();
                 }
                 updateToggleIcon();
-                
+
                 // Save collapsed state
                 const currentState = vscode.getState() || {};
                 vscode.setState({ ...currentState, urlCollapsed: window.urlCollapsed });
             });
             updateToggleIcon();
+
+            // Reload button
+            const reloadBtn = document.getElementById('reload-btn');
+            reloadBtn.addEventListener('click', function() {
+                const iframe = document.getElementById('dashboard-iframe');
+                if (iframe && iframe.src && iframe.src !== 'about:blank') {
+                    const currentSrc = iframe.src;
+                    iframe.src = '';
+                    setTimeout(() => {
+                        iframe.src = currentSrc;
+                    }, 50);
+                }
+            });
         });
         // Save scroll position function
         function saveScrollPosition() {
@@ -3104,6 +3146,11 @@
         window.addEventListener('message', event => {
             const msg = event.data;
             console.log('Received message:', msg);
+            // Relay openExternal from iframe to extension
+            if (msg && msg.type === 'openExternal' && msg.url) {
+                vscode.postMessage({ type: 'openExternal', url: msg.url });
+                return;
+            }
             if (msg && msg.type === 'resolvedFileUrl') {
                 // Clear timeout if it exists
                 if (window._fileUrlTimeoutId) {

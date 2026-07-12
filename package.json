@@ -2,7 +2,7 @@
   "name": "vscode-web-panel",
   "displayName": "Web Panel",
   "description": "Display web dashboards directly in VS Code panels or side views. Includes a customizable default dashboard shown when no URL is specified.",
-  "version": "0.8.3",
+  "version": "0.9.0",
   "publisher": "dkurokawa",
   "repository": {
     "type": "git",
@@ -36,7 +36,10 @@
       "properties": {
         "web-panel.renderMode": {
           "type": "string",
-          "enum": ["iframe", "fetch"],
+          "enum": [
+            "iframe",
+            "fetch"
+          ],
           "default": "iframe",
           "description": "How to render web content. 'iframe' is secure but may be blocked by some sites. 'fetch' can display any content but is less secure."
         },
@@ -52,7 +55,11 @@
         },
         "web-panel.security.sandboxLevel": {
           "type": "string",
-          "enum": ["strict", "medium", "relaxed"],
+          "enum": [
+            "strict",
+            "medium",
+            "relaxed"
+          ],
           "default": "relaxed",
           "description": "Sandbox restrictions for iframe mode. Strict: minimal permissions, Medium: balanced, Relaxed: most features enabled"
         }
@@ -84,14 +91,13 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.102.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
+    "@types/vscode": "^1.102.0",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
-    "eslint": "^9.25.1",
-    "typescript": "^5.8.3",
     "@vscode/test-cli": "^0.0.11",
-    "@vscode/test-electron": "^2.5.2"
+    "eslint": "^9.25.1",
+    "typescript": "^5.8.3"
   }
 }

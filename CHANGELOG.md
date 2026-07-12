@@ -5,6 +5,16 @@ All notable changes to the "vscode-web-panel" extension will be documented in th
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-02-06
+
+### Added
+- Reload button in the URL bar for quick page refresh
+- Reload button stays visible at top-right when URL bar is collapsed
+
+### Fixed
+- URL history dropdown now closes properly when pressing Enter
+- URL history dropdown now closes when selecting an item via keyboard
+
 ## [0.8.3] - 2025-01-30
 
 ### Fixed

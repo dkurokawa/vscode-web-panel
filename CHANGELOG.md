@@ -15,6 +15,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - URL history dropdown now closes properly when pressing Enter
 - URL history dropdown now closes when selecting an item via keyboard
 
+### Security
+- Restricted the webview's `localResourceRoots` to the extension's own files and open workspace folders (previously allowed reading any file on disk)
+- Tightened the dashboard Content-Security-Policy: `default-src 'self'` and removed `'unsafe-eval'`/wildcards from `script-src`
+
+### Changed
+- Default `security.sandboxLevel` is now `medium` and `navigation.allowExternal` is `false`, matching the documented (safer) defaults
+- Deduplicated the sidebar view and editor panel message handling into shared helpers; the panel now registers its message listener once instead of leaking one per view-state change
+
 ## [0.8.3] - 2025-01-30
 
 ### Fixed

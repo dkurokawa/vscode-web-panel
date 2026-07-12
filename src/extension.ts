@@ -21,6 +21,168 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {}
 
 /**
+ * Build the set of local resource roots the webview is allowed to read from.
+ * Limited to the extension's own files plus any open workspace folders so the
+ * webview cannot read arbitrary files on disk.
+ */
+function getLocalResourceRoots(extensionUri: vscode.Uri): vscode.Uri[] {
+	const roots: vscode.Uri[] = [extensionUri];
+	for (const folder of vscode.workspace.workspaceFolders ?? []) {
+		roots.push(folder.uri);
+	}
+	return roots;
+}
+
+/**
+ * Read the dashboard HTML template and inject the user's configuration.
+ * Shared by the sidebar view and the editor panel.
+ */
+function getDashboardHtml(extensionUri: vscode.Uri): string {
+	const htmlPath = vscode.Uri.joinPath(extensionUri, 'src', 'dashboard-template.html');
+	const htmlContent = fs.readFileSync(htmlPath.fsPath, 'utf8');
+
+	const config = vscode.workspace.getConfiguration('web-panel');
+	const renderMode = config.get<string>('renderMode', 'iframe');
+	const navigationEnabled = config.get<boolean>('navigation.enabled', true);
+	const allowExternal = config.get<boolean>('navigation.allowExternal', false);
+	const sandboxLevel = config.get<string>('security.sandboxLevel', 'medium');
+
+	// Replace configuration placeholders in the JavaScript config object
+	return htmlContent
+		.replace('renderMode: \'iframe\',', `renderMode: '${renderMode}',`)
+		.replace('navigationEnabled: true,', `navigationEnabled: ${navigationEnabled},`)
+		.replace('allowExternal: false,', `allowExternal: ${allowExternal},`)
+		.replace('sandboxLevel: \'medium\'', `sandboxLevel: '${sandboxLevel}'`);
+}
+
+const DEFAULT_SERVICES = {
+	"web-panel.services": [
+		{ "icon": "🌐", "title": "My Web Service", "subtitle": "Main application server", "type": "web", "url": "http://localhost:3000", "healthEndpoint": "/health" },
+		{ "icon": "🤖", "title": "Bot Service", "subtitle": "Background worker", "type": "bot", "url": "http://localhost:3001", "healthEndpoint": "/health" },
+		{ "icon": "🗄️", "title": "Database", "subtitle": "PostgreSQL main database", "type": "db", "url": "http://localhost:5432", "healthEndpoint": "/health" },
+		{ "icon": "🔌", "title": "API Gateway", "subtitle": "REST API endpoints", "type": "api", "url": "http://localhost:8080", "healthEndpoint": "/health" }
+	]
+};
+
+/**
+ * Handle a message posted from the dashboard webview.
+ * Shared by the sidebar view and the editor panel so both behave identically.
+ */
+async function handleWebviewMessage(webview: vscode.Webview, msg: any): Promise<void> {
+	// Convert file:// requests to safe URLs and return
+	if (msg && msg.type === 'resolveFileUrl' && msg.fileUrl) {
+		try {
+			let filePath = msg.fileUrl;
+			if (filePath.startsWith('file://')) {
+				filePath = filePath.substring(7);
+			}
+			const uri = vscode.Uri.file(filePath);
+			const webviewUri = webview.asWebviewUri(uri).toString();
+			webview.postMessage({ type: 'resolvedFileUrl', webviewUrl: webviewUri });
+		} catch (e) {
+			console.error('Error converting file URL:', e);
+			webview.postMessage({ type: 'resolvedFileUrl', webviewUrl: '' });
+		}
+	}
+	// Open external URL in browser
+	else if (msg && msg.type === 'openExternal' && msg.url) {
+		try {
+			await vscode.env.openExternal(vscode.Uri.parse(msg.url));
+		} catch (e) {
+			console.error('Error opening external URL:', e);
+		}
+	}
+	// Read settings.json
+	else if (msg && msg.type === 'readSettings') {
+		try {
+			const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+			if (workspaceFolder) {
+				const settingsPath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode', 'settings.json');
+				try {
+					const settingsContent = await vscode.workspace.fs.readFile(settingsPath);
+					const settingsText = Buffer.from(settingsContent).toString('utf8');
+					webview.postMessage({ type: 'settingsData', settings: settingsText });
+				} catch (e) {
+					webview.postMessage({ type: 'settingsData', settings: null, error: 'No settings.json found' });
+				}
+			} else {
+				webview.postMessage({ type: 'settingsData', settings: null, error: 'No workspace folder open' });
+			}
+		} catch (e) {
+			console.error('Error reading settings:', e);
+			webview.postMessage({ type: 'settingsData', settings: null, error: 'Failed to read settings' });
+		}
+	}
+	// Open settings.json in editor
+	else if (msg && msg.type === 'openSettings') {
+		try {
+			const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+			if (workspaceFolder) {
+				const settingsPath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode', 'settings.json');
+				// Create default settings if file doesn't exist
+				try {
+					await vscode.workspace.fs.stat(settingsPath);
+				} catch {
+					const vscodePath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode');
+					try {
+						await vscode.workspace.fs.createDirectory(vscodePath);
+					} catch {}
+
+					const settingsContent = JSON.stringify(DEFAULT_SERVICES, null, 4);
+					await vscode.workspace.fs.writeFile(settingsPath, Buffer.from(settingsContent, 'utf8'));
+				}
+
+				const document = await vscode.workspace.openTextDocument(settingsPath);
+				await vscode.window.showTextDocument(document);
+			}
+		} catch (e) {
+			console.error('Error opening settings:', e);
+		}
+	}
+	// Auto-detect services
+	else if (msg && msg.type === 'autoDetectServices') {
+		try {
+			const services = await autoDetectServices();
+			webview.postMessage({ type: 'detectedServices', services });
+		} catch (e) {
+			console.error('Error auto-detecting services:', e);
+			webview.postMessage({ type: 'detectedServices', services: [], error: 'Failed to auto-detect services' });
+		}
+	}
+	// Save auto-detected settings
+	else if (msg && msg.type === 'saveAutoDetectedSettings' && msg.settings) {
+		try {
+			const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+			if (workspaceFolder) {
+				const settingsPath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode', 'settings.json');
+
+				const vscodePath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode');
+				try {
+					await vscode.workspace.fs.createDirectory(vscodePath);
+				} catch {}
+
+				let existingSettings: any = {};
+				try {
+					const existingContent = await vscode.workspace.fs.readFile(settingsPath);
+					existingSettings = JSON.parse(Buffer.from(existingContent).toString('utf8'));
+				} catch {}
+
+				const newSettings = JSON.parse(msg.settings);
+				const mergedSettings = { ...existingSettings, ...newSettings };
+
+				const settingsContent = JSON.stringify(mergedSettings, null, 4);
+				await vscode.workspace.fs.writeFile(settingsPath, Buffer.from(settingsContent, 'utf8'));
+
+				vscode.window.showInformationMessage('Auto-detected services saved to settings.json');
+			}
+		} catch (e) {
+			console.error('Error saving auto-detected settings:', e);
+			vscode.window.showErrorMessage('Failed to save auto-detected settings');
+		}
+	}
+}
+
+/**
  * Provider for dashboard webview view in sidebar
  */
 class DashboardViewProvider implements vscode.WebviewViewProvider {
@@ -41,197 +203,13 @@ class DashboardViewProvider implements vscode.WebviewViewProvider {
 
 		webviewView.webview.options = {
 			enableScripts: true,
-			localResourceRoots: [
-				this._extensionUri,
-				vscode.Uri.file('/'), // Allow access to all local files
-				vscode.Uri.file('/Users/kurokawadaisuke/projects') // Add specific project directory
-			]
+			localResourceRoots: getLocalResourceRoots(this._extensionUri)
 		};
 
-		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+		webviewView.webview.html = getDashboardHtml(this._extensionUri);
 
 		// Handle messages from webview
-		webviewView.webview.onDidReceiveMessage(async (msg) => {
-			// Convert file:// requests to safe URLs and return
-			if (msg && msg.type === 'resolveFileUrl' && msg.fileUrl) {
-				try {
-					// Extract file:// path (get path after file://)
-					let filePath = msg.fileUrl;
-					if (filePath.startsWith('file://')) {
-						// Remove file://
-						filePath = filePath.substring(7);
-					}
-					console.log('Converting file path:', filePath);
-					const uri = vscode.Uri.file(filePath);
-					const webviewUri = webviewView.webview.asWebviewUri(uri).toString();
-					console.log('Converted to webview URI:', webviewUri);
-					webviewView.webview.postMessage({ type: 'resolvedFileUrl', webviewUrl: webviewUri });
-				} catch (e) {
-					console.error('Error converting file URL:', e);
-					webviewView.webview.postMessage({ type: 'resolvedFileUrl', webviewUrl: '' });
-				}
-			}
-			// Open external URL in browser
-			else if (msg && msg.type === 'openExternal' && msg.url) {
-				try {
-					await vscode.env.openExternal(vscode.Uri.parse(msg.url));
-				} catch (e) {
-					console.error('Error opening external URL:', e);
-				}
-			}
-			// Read settings.json
-			else if (msg && msg.type === 'readSettings') {
-				try {
-					const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-					if (workspaceFolder) {
-						const settingsPath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode', 'settings.json');
-						try {
-							const settingsContent = await vscode.workspace.fs.readFile(settingsPath);
-							const settingsText = Buffer.from(settingsContent).toString('utf8');
-							webviewView.webview.postMessage({ type: 'settingsData', settings: settingsText });
-						} catch (e) {
-							// Settings file doesn't exist
-							webviewView.webview.postMessage({ type: 'settingsData', settings: null, error: 'No settings.json found' });
-						}
-					} else {
-						webviewView.webview.postMessage({ type: 'settingsData', settings: null, error: 'No workspace folder open' });
-					}
-				} catch (e) {
-					console.error('Error reading settings:', e);
-					webviewView.webview.postMessage({ type: 'settingsData', settings: null, error: 'Failed to read settings' });
-				}
-			}
-			// Open settings.json in editor
-			else if (msg && msg.type === 'openSettings') {
-				try {
-					const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-					if (workspaceFolder) {
-						const settingsPath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode', 'settings.json');
-						// Create default settings if file doesn't exist
-						try {
-							await vscode.workspace.fs.stat(settingsPath);
-						} catch {
-							// Create .vscode directory if it doesn't exist
-							const vscodePath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode');
-							try {
-								await vscode.workspace.fs.createDirectory(vscodePath);
-							} catch {}
-							
-							// Create default settings
-							const defaultSettings = {
-								"web-panel.services": [
-									{
-										"icon": "🌐",
-										"title": "My Web Service",
-										"subtitle": "Main application server",
-										"type": "web",
-										"url": "http://localhost:3000",
-										"healthEndpoint": "/health"
-									},
-									{
-										"icon": "🤖",
-										"title": "Bot Service",
-										"subtitle": "Background worker",
-										"type": "bot",
-										"url": "http://localhost:3001",
-										"healthEndpoint": "/health"
-									},
-									{
-										"icon": "🗄️",
-										"title": "Database",
-										"subtitle": "PostgreSQL main database",
-										"type": "db",
-										"url": "http://localhost:5432",
-										"healthEndpoint": "/health"
-									},
-									{
-										"icon": "🔌",
-										"title": "API Gateway",
-										"subtitle": "REST API endpoints",
-										"type": "api",
-										"url": "http://localhost:8080",
-										"healthEndpoint": "/health"
-									}
-								]
-							};
-							const settingsContent = JSON.stringify(defaultSettings, null, 4);
-							await vscode.workspace.fs.writeFile(settingsPath, Buffer.from(settingsContent, 'utf8'));
-						}
-						
-						// Open settings file
-						const document = await vscode.workspace.openTextDocument(settingsPath);
-						await vscode.window.showTextDocument(document);
-					}
-				} catch (e) {
-					console.error('Error opening settings:', e);
-				}
-			}
-			// Auto-detect services
-			else if (msg && msg.type === 'autoDetectServices') {
-				try {
-					const services = await autoDetectServices();
-					webviewView.webview.postMessage({ type: 'detectedServices', services });
-				} catch (e) {
-					console.error('Error auto-detecting services:', e);
-					webviewView.webview.postMessage({ type: 'detectedServices', services: [], error: 'Failed to auto-detect services' });
-				}
-			}
-			// Save auto-detected settings
-			else if (msg && msg.type === 'saveAutoDetectedSettings' && msg.settings) {
-				try {
-					const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-					if (workspaceFolder) {
-						const settingsPath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode', 'settings.json');
-						
-						// Create .vscode directory if it doesn't exist
-						const vscodePath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode');
-						try {
-							await vscode.workspace.fs.createDirectory(vscodePath);
-						} catch {}
-						
-						// Read existing settings if any
-						let existingSettings: any = {};
-						try {
-							const existingContent = await vscode.workspace.fs.readFile(settingsPath);
-							existingSettings = JSON.parse(Buffer.from(existingContent).toString('utf8'));
-						} catch {}
-						
-						// Merge with auto-detected settings
-						const newSettings = JSON.parse(msg.settings);
-						const mergedSettings = { ...existingSettings, ...newSettings };
-						
-						// Write settings
-						const settingsContent = JSON.stringify(mergedSettings, null, 4);
-						await vscode.workspace.fs.writeFile(settingsPath, Buffer.from(settingsContent, 'utf8'));
-						
-						vscode.window.showInformationMessage('Auto-detected services saved to settings.json');
-					}
-				} catch (e) {
-					console.error('Error saving auto-detected settings:', e);
-					vscode.window.showErrorMessage('Failed to save auto-detected settings');
-				}
-			}
-		});
-	}
-
-	private _getHtmlForWebview(_webview: vscode.Webview) {
-		// Read the HTML template file
-		const htmlPath = vscode.Uri.joinPath(this._extensionUri, 'src', 'dashboard-template.html');
-		const htmlContent = fs.readFileSync(htmlPath.fsPath, 'utf8');
-		
-		// Get the user's configuration
-		const config = vscode.workspace.getConfiguration('web-panel');
-		const renderMode = config.get<string>('renderMode', 'iframe');
-		const navigationEnabled = config.get<boolean>('navigation.enabled', true);
-		const allowExternal = config.get<boolean>('navigation.allowExternal', false);
-		const sandboxLevel = config.get<string>('security.sandboxLevel', 'medium');
-		
-		// Replace configuration placeholders in the JavaScript config object
-		return htmlContent
-			.replace('renderMode: \'iframe\',', `renderMode: '${renderMode}',`)
-			.replace('navigationEnabled: true,', `navigationEnabled: ${navigationEnabled},`)
-			.replace('allowExternal: false,', `allowExternal: ${allowExternal},`)
-			.replace('sandboxLevel: \'medium\'', `sandboxLevel: '${sandboxLevel}'`);
+		webviewView.webview.onDidReceiveMessage((msg) => handleWebviewMessage(webviewView.webview, msg));
 	}
 }
 
@@ -265,11 +243,7 @@ class DashboardPanel {
 			{
 				enableScripts: true,
 				retainContextWhenHidden: true,
-				localResourceRoots: [
-					extensionUri, 
-					vscode.Uri.file('/'),
-					vscode.Uri.file('/Users/kurokawadaisuke/projects') // Add specific project directory
-				]
+				localResourceRoots: getLocalResourceRoots(extensionUri)
 			}
 		);
 
@@ -283,10 +257,19 @@ class DashboardPanel {
 		// Set the webview's initial html content
 		this._update();
 
+		// Register the message handler once for the lifetime of the panel.
+		// (Previously this lived in _update() and leaked a new listener on every
+		// view-state change.)
+		this._panel.webview.onDidReceiveMessage(
+			(msg) => handleWebviewMessage(this._panel.webview, msg),
+			null,
+			this._disposables
+		);
+
 		// Listen for when the panel is disposed
 		this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
-		// Update the content based on view state changes
+		// Refresh the content when the panel becomes visible again
 		this._panel.onDidChangeViewState(
 			_e => {
 				if (this._panel.visible) {
@@ -313,192 +296,8 @@ class DashboardPanel {
 	}
 
 	private _update() {
-		const webview = this._panel.webview;
 		this._panel.title = 'Dashboard Panel';
-		this._panel.webview.html = this._getHtmlForWebview(webview);
-
-		// Handle messages from webview
-		webview.onDidReceiveMessage(async (msg) => {
-			// Convert file:// requests to safe URLs and return
-			if (msg && msg.type === 'resolveFileUrl' && msg.fileUrl) {
-				try {
-					// Extract file:// path (get path after file://)
-					let filePath = msg.fileUrl;
-					if (filePath.startsWith('file://')) {
-						// Remove file://
-						filePath = filePath.substring(7);
-					}
-					console.log('Converting file path:', filePath);
-					const uri = vscode.Uri.file(filePath);
-					const webviewUri = webview.asWebviewUri(uri).toString();
-					console.log('Converted to webview URI:', webviewUri);
-					webview.postMessage({ type: 'resolvedFileUrl', webviewUrl: webviewUri });
-				} catch (e) {
-					console.error('Error converting file URL:', e);
-					webview.postMessage({ type: 'resolvedFileUrl', webviewUrl: '' });
-				}
-			}
-			// Open external URL in browser
-			else if (msg && msg.type === 'openExternal' && msg.url) {
-				try {
-					await vscode.env.openExternal(vscode.Uri.parse(msg.url));
-				} catch (e) {
-					console.error('Error opening external URL:', e);
-				}
-			}
-			// Read settings.json
-			else if (msg && msg.type === 'readSettings') {
-				try {
-					const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-					if (workspaceFolder) {
-						const settingsPath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode', 'settings.json');
-						try {
-							const settingsContent = await vscode.workspace.fs.readFile(settingsPath);
-							const settingsText = Buffer.from(settingsContent).toString('utf8');
-							webview.postMessage({ type: 'settingsData', settings: settingsText });
-						} catch (e) {
-							// Settings file doesn't exist
-							webview.postMessage({ type: 'settingsData', settings: null, error: 'No settings.json found' });
-						}
-					} else {
-						webview.postMessage({ type: 'settingsData', settings: null, error: 'No workspace folder open' });
-					}
-				} catch (e) {
-					console.error('Error reading settings:', e);
-					webview.postMessage({ type: 'settingsData', settings: null, error: 'Failed to read settings' });
-				}
-			}
-			// Open settings.json in editor
-			else if (msg && msg.type === 'openSettings') {
-				try {
-					const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-					if (workspaceFolder) {
-						const settingsPath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode', 'settings.json');
-						// Create default settings if file doesn't exist
-						try {
-							await vscode.workspace.fs.stat(settingsPath);
-						} catch {
-							// Create .vscode directory if it doesn't exist
-							const vscodePath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode');
-							try {
-								await vscode.workspace.fs.createDirectory(vscodePath);
-							} catch {}
-							
-							// Create default settings
-							const defaultSettings = {
-								"web-panel.services": [
-									{
-										"icon": "🌐",
-										"title": "My Web Service",
-										"subtitle": "Main application server",
-										"type": "web",
-										"url": "http://localhost:3000",
-										"healthEndpoint": "/health"
-									},
-									{
-										"icon": "🤖",
-										"title": "Bot Service",
-										"subtitle": "Background worker",
-										"type": "bot",
-										"url": "http://localhost:3001",
-										"healthEndpoint": "/health"
-									},
-									{
-										"icon": "🗄️",
-										"title": "Database",
-										"subtitle": "PostgreSQL main database",
-										"type": "db",
-										"url": "http://localhost:5432",
-										"healthEndpoint": "/health"
-									},
-									{
-										"icon": "🔌",
-										"title": "API Gateway",
-										"subtitle": "REST API endpoints",
-										"type": "api",
-										"url": "http://localhost:8080",
-										"healthEndpoint": "/health"
-									}
-								]
-							};
-							const settingsContent = JSON.stringify(defaultSettings, null, 4);
-							await vscode.workspace.fs.writeFile(settingsPath, Buffer.from(settingsContent, 'utf8'));
-						}
-						
-						// Open settings file
-						const document = await vscode.workspace.openTextDocument(settingsPath);
-						await vscode.window.showTextDocument(document);
-					}
-				} catch (e) {
-					console.error('Error opening settings:', e);
-				}
-			}
-			// Auto-detect services
-			else if (msg && msg.type === 'autoDetectServices') {
-				try {
-					const services = await autoDetectServices();
-					webview.postMessage({ type: 'detectedServices', services });
-				} catch (e) {
-					console.error('Error auto-detecting services:', e);
-					webview.postMessage({ type: 'detectedServices', services: [], error: 'Failed to auto-detect services' });
-				}
-			}
-			// Save auto-detected settings
-			else if (msg && msg.type === 'saveAutoDetectedSettings' && msg.settings) {
-				try {
-					const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-					if (workspaceFolder) {
-						const settingsPath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode', 'settings.json');
-						
-						// Create .vscode directory if it doesn't exist
-						const vscodePath = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode');
-						try {
-							await vscode.workspace.fs.createDirectory(vscodePath);
-						} catch {}
-						
-						// Read existing settings if any
-						let existingSettings: any = {};
-						try {
-							const existingContent = await vscode.workspace.fs.readFile(settingsPath);
-							existingSettings = JSON.parse(Buffer.from(existingContent).toString('utf8'));
-						} catch {}
-						
-						// Merge with auto-detected settings
-						const newSettings = JSON.parse(msg.settings);
-						const mergedSettings = { ...existingSettings, ...newSettings };
-						
-						// Write settings
-						const settingsContent = JSON.stringify(mergedSettings, null, 4);
-						await vscode.workspace.fs.writeFile(settingsPath, Buffer.from(settingsContent, 'utf8'));
-						
-						vscode.window.showInformationMessage('Auto-detected services saved to settings.json');
-					}
-				} catch (e) {
-					console.error('Error saving auto-detected settings:', e);
-					vscode.window.showErrorMessage('Failed to save auto-detected settings');
-				}
-			}
-		});
-	}
-
-	private _getHtmlForWebview(_webview: vscode.Webview) {
-		// Read the HTML template file
-		const htmlPath = vscode.Uri.joinPath(this._extensionUri, 'src', 'dashboard-template.html');
-		const htmlContent = fs.readFileSync(htmlPath.fsPath, 'utf8');
-		
-		// Get the user's configuration
-		const config = vscode.workspace.getConfiguration('web-panel');
-		const renderMode = config.get<string>('renderMode', 'iframe');
-		const navigationEnabled = config.get<boolean>('navigation.enabled', true);
-		const allowExternal = config.get<boolean>('navigation.allowExternal', false);
-		const sandboxLevel = config.get<string>('security.sandboxLevel', 'medium');
-		
-		// Replace configuration placeholders in the JavaScript config object
-		return htmlContent
-			.replace('renderMode: \'iframe\',', `renderMode: '${renderMode}',`)
-			.replace('navigationEnabled: true,', `navigationEnabled: ${navigationEnabled},`)
-			.replace('allowExternal: false,', `allowExternal: ${allowExternal},`)
-			.replace('sandboxLevel: \'medium\'', `sandboxLevel: '${sandboxLevel}'`);
+		this._panel.webview.html = getDashboardHtml(this._extensionUri);
 	}
 }
 

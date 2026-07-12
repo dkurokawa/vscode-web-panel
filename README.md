@@ -1,5 +1,10 @@
 # Web Panel for VS Code
 
+[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/dkurokawa.vscode-web-panel)](https://marketplace.visualstudio.com/items?itemName=dkurokawa.vscode-web-panel)
+[![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/dkurokawa.vscode-web-panel)](https://marketplace.visualstudio.com/items?itemName=dkurokawa.vscode-web-panel)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/dkurokawa/vscode-web-panel/actions/workflows/ci.yml/badge.svg)](https://github.com/dkurokawa/vscode-web-panel/actions/workflows/ci.yml)
+
 Display web dashboards directly within VS Code using webview panels or side views. Perfect for monitoring services, viewing analytics, or keeping any web-based dashboard accessible while coding.
 
 ![Web Panel Screenshot](images/ss01.png)
@@ -15,7 +20,7 @@ Display web dashboards directly within VS Code using webview panels or side view
 
 ## Installation
 
-1. Install from the VS Code Marketplace (coming soon)
+1. Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=dkurokawa.vscode-web-panel)
 2. Or install the `.vsix` file directly:
    ```bash
    code --install-extension vscode-web-panel-*.vsix
@@ -25,17 +30,7 @@ Display web dashboards directly within VS Code using webview panels or side view
 
 When no URL is entered, a built-in sample dashboard (dummy HTML) is displayed. You can freely customize this dashboard by editing `src/dashboard-template.html`.
 
-
-### Example: Default Dashboard HTML (Full Source)
-
-You can copy and paste the entire default dashboard template below to create your own stylish dashboard. Edit freely for your service!
-
-```html
-<!-- src/dashboard-template.html -->
-...existing code from the file dashboard-template.html...
-```
-
-> **Tip:** For the latest version, see [`src/dashboard-template.html` on GitHub](https://github.com/dkurokawa/vscode-web-panel/blob/main/src/dashboard-template.html)
+The full template lives in [`src/dashboard-template.html`](https://github.com/dkurokawa/vscode-web-panel/blob/main/src/dashboard-template.html) — copy it as a starting point for your own dashboard.
 
 **How to customize:**
 - Edit `src/dashboard-template.html` to change the default dashboard.
